@@ -1,14 +1,14 @@
 {
-    "Group": "Example",
-    "Name": "ExamplePlugin",
-    "Version": "0.0.2",
-    "Description": "An example plugin for HyTale!",
+    "Group": "litebow",
+    "Name": "Hybridge",
+    "Version": "0.0.1",
+    "Description": "A bridge plugin for Hytale",
     "Authors": [
         {
-            "Name": "It's you!"
+            "Name": "litebow"
         }
     ],
-    "Website": "example.org",
+    "Website": "litebow.net",
     "ServerVersion": "*",
     "Dependencies": {
         
@@ -17,6 +17,6 @@
         
     },
     "DisabledByDefault": false,
-    "Main": "org.example.plugin.ExamplePlugin",
+    "Main": "com.litebow.plugin.Hybridge",
     "IncludesAssetPack": true
 }

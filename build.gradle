@@ -12,7 +12,7 @@ ext {
     else {
         def os = OperatingSystem.current()
         if (os.isWindows()) {
-            hytaleHome = "${System.getProperty("user.home")}/AppData/Roaming/Hytale"
+            hytaleHome = "D:/Games/Hytale/HytaleGame"
         }
         else if (os.isMacOsX()) {
             hytaleHome = "${System.getProperty("user.home")}/Library/Application Support/Hytale"
