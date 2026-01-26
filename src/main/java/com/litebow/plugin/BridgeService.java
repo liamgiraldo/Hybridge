@@ -1,6 +1,7 @@
 package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
@@ -29,6 +30,10 @@ public class BridgeService {
         Vector3d buildAreaMin = new Vector3d(713,159,-56);
         Vector3d buildAreaMax = new Vector3d(663,173,-74);
         double killPlaneY = 155;
+
+        Vector3i mapBound1 = new Vector3i(657,173,-74);
+        Vector3i mapBound2 = new Vector3i(719,159,-56);
+
         MapModel defaultMap = new MapModel(
                 "Default Bridge Map",
                 "Litebow",
@@ -42,7 +47,9 @@ public class BridgeService {
                 blueGoalPos2,
                 buildAreaMin,
                 buildAreaMax,
-                killPlaneY
+                killPlaneY,
+                mapBound1,
+                mapBound2
         );
 
         BridgeGame newGame = new BridgeGame(defaultMap);

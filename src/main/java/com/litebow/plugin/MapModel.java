@@ -1,6 +1,7 @@
 package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 
 public class MapModel {
     private String mapName;
@@ -28,13 +29,17 @@ public class MapModel {
     private Vector3d buildAreaMax;
     private double killPlaneY;
 
+    //these should encompass the entire map area for saving /loading purposes
+    private Vector3i mapBound1;
+    private Vector3i mapBound2;
+
     public MapModel(String mapName, String mapAuthor, String mapDescription,
                     Vector3d mapOrigin,
                     Vector3d redTeamSpawn, Vector3d blueTeamSpawn,
                     Vector3d redGoalPos1, Vector3d redGoalPos2,
                     Vector3d blueGoalPos1, Vector3d blueGoalPos2,
                     Vector3d buildAreaMin, Vector3d buildAreaMax,
-                    double killPlaneY) {
+                    double killPlaneY, Vector3i mapBound1, Vector3i mapBound2) {
         this.mapName = mapName;
         this.mapAuthor = mapAuthor;
         this.mapDescription = mapDescription;
@@ -48,6 +53,9 @@ public class MapModel {
         this.buildAreaMin = buildAreaMin;
         this.buildAreaMax = buildAreaMax;
         this.killPlaneY = killPlaneY;
+
+        this.mapBound1 = mapBound1;
+        this.mapBound2 = mapBound2;
 
     }
 
@@ -101,5 +109,13 @@ public class MapModel {
 
     public double getKillPlaneY() {
         return killPlaneY;
+    }
+
+    public Vector3i getMapBound1() {
+        return mapBound1;
+    }
+
+    public Vector3i getMapBound2() {
+        return mapBound2;
     }
 }

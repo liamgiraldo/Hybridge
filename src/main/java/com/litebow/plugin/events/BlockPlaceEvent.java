@@ -6,6 +6,9 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.entity.entities.BlockEntity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -30,6 +33,9 @@ public class BlockPlaceEvent extends EntityEventSystem<EntityStore, PlaceBlockEv
         var ref = archetypeChunk.getReferenceTo(i);
         PlayerRef playerRef = ref.getStore().getComponent(ref, PlayerRef.getComponentType());
         Player player = ref.getStore().getComponent(ref, Player.getComponentType());
+
+//        ChunkUtil (use this for later)
+
 //        placeBlockEvent.setCancelled(true);
         BridgeGame game = bridgeService.getPlayerGame(playerRef);
         if(game != null && !game.canPlaceBlock(placeBlockEvent.getTargetBlock())){
