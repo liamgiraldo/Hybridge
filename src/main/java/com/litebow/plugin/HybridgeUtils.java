@@ -5,6 +5,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.BlockPosition;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
@@ -12,6 +14,8 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+
+import java.util.Objects;
 
 public class HybridgeUtils {
     private HybridgeUtils() {
@@ -77,8 +81,33 @@ public class HybridgeUtils {
     }
 
     public static boolean isPositionWithinArea(Vector3d pos, Vector3d min, Vector3d max){
-        return (pos.x >= min.x && pos.x <= max.x) &&
-               (pos.y >= min.y && pos.y <= max.y) &&
-               (pos.z >= min.z && pos.z <= max.z);
+        //sort min and max just in case
+        Vector3d realMin = new Vector3d(
+                Math.min(min.x, max.x),
+                Math.min(min.y, max.y),
+                Math.min(min.z, max.z)
+        );
+        Vector3d realMax = new Vector3d(
+                Math.max(min.x, max.x),
+                Math.max(min.y, max.y),
+                Math.max(min.z, max.z)
+        );
+        Hybridge.LOGGER.atInfo().log("Checking position " + pos + " within area min " + realMin + " and max " + realMax);
+        return (pos.x >= realMin.x && pos.x <= realMax.x) &&
+               (pos.y >= realMin.y && pos.y <= realMax.y) &&
+               (pos.z >= realMin.z && pos.z <= realMax.z);
+    }
+
+    public static boolean isBlockValidBridgeBlock(BlockType blockType){
+        String blockName = blockType.getId();
+        Hybridge.LOGGER.atInfo().log("Checking if block " + blockName + " is a valid bridge block.");
+        Hybridge.LOGGER.atInfo().log("Red Block ID: " + HybridgeConstants.RED_BLOCK.getItemId());
+        Hybridge.LOGGER.atInfo().log("Blue Block ID: " + HybridgeConstants.BLUE_BLOCK.getItemId());
+        Hybridge.LOGGER.atInfo().log("White Block ID: " + HybridgeConstants.WHITE_BLOCK.getItemId());
+        if(Objects.equals(blockName, HybridgeConstants.RED_BLOCK.getItemId()) ||
+                Objects.equals(blockName, HybridgeConstants.BLUE_BLOCK.getItemId()) || Objects.equals(blockName, HybridgeConstants.WHITE_BLOCK.getItemId())){
+            return true;
+        }
+        return false;
     }
 }

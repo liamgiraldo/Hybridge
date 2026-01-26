@@ -81,6 +81,15 @@ public class GameModel {
         return this.gameInGame;
     }
 
+    //hack fix so I don't have to refactor again
+    public HashSet<PlayerRef> getPlayerRefsInGameSet(){
+        HashSet<PlayerRef> playerRefs = new HashSet<>();
+        for(Player player : this.gameInGame){
+            playerRefs.add(player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType()));
+        }
+        return playerRefs;
+    }
+
     public HashMap<Player, Team> getPlayerTeams() {
         return playerTeams;
     }

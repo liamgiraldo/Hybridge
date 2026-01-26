@@ -26,7 +26,7 @@ public class BridgeService {
         Vector3d redGoalPos2 = new Vector3d(717,166,-64);
         Vector3d blueGoalPos1 = new Vector3d(659,166,-66);
         Vector3d blueGoalPos2 = new Vector3d(661,166,-64);
-        Vector3d buildAreaMin = new Vector3d(-10,0,-10);
+        Vector3d buildAreaMin = new Vector3d(713,159,-56);
         Vector3d buildAreaMax = new Vector3d(663,173,-74);
         double killPlaneY = 155;
         MapModel defaultMap = new MapModel(
@@ -71,10 +71,12 @@ public class BridgeService {
 
     public void startGame(BridgeGame game){
         game.startGame();
+        game.gameModel.getPlayerRefsInGameSet().forEach(player -> playerGameMap.put(player, game));
     }
 
     public void stopGame(BridgeGame game){
         game.stopGame();
+        game.gameModel.getPlayersInGameSet().forEach(player -> playerGameMap.remove(player));
     }
 
     public void leaveQueue(PlayerRef player){
@@ -88,5 +90,7 @@ public class BridgeService {
         return this.games;
     }
 
-
+    public BridgeGame getPlayerGame(PlayerRef player){
+        return playerGameMap.get(player);
+    }
 }

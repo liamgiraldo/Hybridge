@@ -1,7 +1,10 @@
 package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.HytaleServer;
+
 import com.hypixel.hytale.server.core.entity.entities.Player;
 
 import java.util.concurrent.ScheduledFuture;
@@ -18,12 +21,16 @@ public class BridgeGame {
         this.gameModel = new GameModel(map);
     }
 
-    public boolean canPlaceBlock(Player player){
-
-        return false;
+    public boolean canPlaceBlock(Vector3i blockPosition){
+        //you also can't place blocks during the starting / stopping phases but that's not implemented yet
+        //TODO: implement that
+        return HybridgeUtils.isPositionWithinArea(blockPosition.toVector3d(), gameModel.map.getBuildAreaMin(), gameModel.map.getBuildAreaMax());
     }
 
-    public boolean canBreakBlock(){
+    public boolean canBreakBlock(BlockType blockType, Vector3i blockPosition){
+        if(HybridgeUtils.isBlockValidBridgeBlock(blockType)){
+            return true;
+        }
         return false;
     }
 
@@ -52,8 +59,8 @@ public class BridgeGame {
         // Please help me find a better, safer way to do this! :)
         gameTimerTask = HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(()->{
             update();
-            remainingMs -= 100;
-        },0, 100, TimeUnit.MILLISECONDS);
+            remainingMs -= HybridgeConstants.GAME_TICK_MILLISECONDS;
+        },0, HybridgeConstants.GAME_TICK_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 
     public void stopGame() {

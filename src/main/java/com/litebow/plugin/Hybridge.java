@@ -5,6 +5,7 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.task.TaskRegistration;
+import com.litebow.plugin.events.BlockBreakEvent;
 import com.litebow.plugin.events.BlockPlaceEvent;
 import com.litebow.plugin.events.DamageEvent;
 
@@ -30,8 +31,9 @@ public class Hybridge extends JavaPlugin {
     protected void setup() {
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
         this.getCommandRegistry().registerCommand(new BridgeCommand(bridgeService));
-        this.getEntityStoreRegistry().registerSystem(new BlockPlaceEvent());
+        this.getEntityStoreRegistry().registerSystem(new BlockPlaceEvent(bridgeService));
         this.getEntityStoreRegistry().registerSystem(new DamageEvent());
+        this.getEntityStoreRegistry().registerSystem(new BlockBreakEvent(bridgeService));
 
         bridgeService.createGame(null); //creates a default game on startup
     }

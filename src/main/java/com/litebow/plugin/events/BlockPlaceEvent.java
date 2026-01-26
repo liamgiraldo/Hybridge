@@ -10,6 +10,8 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.litebow.plugin.BridgeGame;
+import com.litebow.plugin.BridgeService;
 import com.litebow.plugin.Hybridge;
 
 import javax.annotation.Nonnull;
@@ -17,16 +19,23 @@ import javax.annotation.Nullable;
 
 public class BlockPlaceEvent extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
 
-    public BlockPlaceEvent() {
+    BridgeService bridgeService;
+    public BlockPlaceEvent(BridgeService bridgeService) {
         super(PlaceBlockEvent.class);
+        this.bridgeService = bridgeService;
     }
 
     @Override
     public void handle(int i, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull PlaceBlockEvent placeBlockEvent) {
         var ref = archetypeChunk.getReferenceTo(i);
         PlayerRef playerRef = ref.getStore().getComponent(ref, PlayerRef.getComponentType());
+        Player player = ref.getStore().getComponent(ref, Player.getComponentType());
 //        placeBlockEvent.setCancelled(true);
-        Hybridge.LOGGER.atInfo().log("Cancelled block place event for player " + playerRef.getUsername());
+        BridgeGame game = bridgeService.getPlayerGame(playerRef);
+        if(game != null && !game.canPlaceBlock(placeBlockEvent.getTargetBlock())){
+            placeBlockEvent.setCancelled(true);
+            Hybridge.LOGGER.atInfo().log("Cancelled block place event for player " + playerRef.getUsername());
+        }
     }
 
     @Nullable
