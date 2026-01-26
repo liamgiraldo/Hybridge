@@ -56,7 +56,8 @@ public class BridgeCommand extends AbstractPlayerCommand {
             }
             else if(this.startOrStopArg.get(commandContext).equalsIgnoreCase("stop")){
                 //not implemented yet
-                player.sendMessage(Message.raw("Stopping Bridge games is not implemented yet.").color(Color.RED).bold(true));
+                player.sendMessage(Message.raw("Stopping the bridge game...").color(Color.RED).bold(true));
+                bridgeService.stopGame(bridgeService.getGames().getFirst()); //forcibly stops the first game. In the future, we can add more logic to select which game to stop
                 return;
             }
         }

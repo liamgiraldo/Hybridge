@@ -22,8 +22,8 @@ public class BridgeService {
         Vector3d redSpawn = new Vector3d(715,172,-65);
         Vector3d blueSpawn = new Vector3d(661,172,-65);
         Vector3d mapOrigin = new Vector3d(688,168,-65);
-        Vector3d redGoalPos1 = new Vector3d(717,166,-64);
-        Vector3d redGoalPos2 = new Vector3d(715,166,-66);
+        Vector3d redGoalPos1 = new Vector3d(715,166,-66);
+        Vector3d redGoalPos2 = new Vector3d(717,166,-64);
         Vector3d blueGoalPos1 = new Vector3d(659,166,-66);
         Vector3d blueGoalPos2 = new Vector3d(661,166,-64);
         Vector3d buildAreaMin = new Vector3d(-10,0,-10);
@@ -71,6 +71,10 @@ public class BridgeService {
 
     public void startGame(BridgeGame game){
         game.startGame();
+    }
+
+    public void stopGame(BridgeGame game){
+        game.stopGame();
     }
 
     public void leaveQueue(PlayerRef player){

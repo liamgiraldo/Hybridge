@@ -84,4 +84,24 @@ public class GameModel {
     public HashMap<Player, Team> getPlayerTeams() {
         return playerTeams;
     }
+
+    public boolean isPlayerInGame(Player player){
+        return gameInGame.contains(player);
+    }
+
+    public void resetGameProperties(){
+        this.redGoals = 0;
+        this.blueGoals = 0;
+        this.playerTeams.clear();
+        this.gameInGame.clear();
+    }
+
+    public void incrementTeamScore(Team team){
+        if(team == Team.RED){
+            redGoals++;
+        }
+        else if(team == Team.BLUE){
+            blueGoals++;
+        }
+    }
 }
