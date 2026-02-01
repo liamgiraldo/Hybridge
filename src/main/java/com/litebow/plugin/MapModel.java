@@ -1,6 +1,7 @@
 package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 
 public class MapModel {
@@ -21,6 +22,10 @@ public class MapModel {
     private Vector3d mapOrigin;
     private Vector3d redTeamSpawn;
     private Vector3d blueTeamSpawn;
+
+    private Vector3f redTeamSpawnRotation;
+    private Vector3f blueTeamSpawnRotation;
+
     private Vector3d redGoalPos1;
     private Vector3d redGoalPos2;
     private Vector3d blueGoalPos1;
@@ -39,7 +44,7 @@ public class MapModel {
                     Vector3d redGoalPos1, Vector3d redGoalPos2,
                     Vector3d blueGoalPos1, Vector3d blueGoalPos2,
                     Vector3d buildAreaMin, Vector3d buildAreaMax,
-                    double killPlaneY, Vector3i mapBound1, Vector3i mapBound2) {
+                    double killPlaneY, Vector3i mapBound1, Vector3i mapBound2, Vector3f redTeamSpawnRotation, Vector3f blueTeamSpawnRotation) {
         this.mapName = mapName;
         this.mapAuthor = mapAuthor;
         this.mapDescription = mapDescription;
@@ -56,6 +61,9 @@ public class MapModel {
 
         this.mapBound1 = mapBound1;
         this.mapBound2 = mapBound2;
+
+        this.redTeamSpawnRotation = redTeamSpawnRotation;
+        this.blueTeamSpawnRotation = blueTeamSpawnRotation;
 
     }
 
@@ -117,5 +125,13 @@ public class MapModel {
 
     public Vector3i getMapBound2() {
         return mapBound2;
+    }
+
+    public Vector3f getRedTeamSpawnRotation() {
+        return redTeamSpawnRotation;
+    }
+
+    public Vector3f getBlueTeamSpawnRotation() {
+        return blueTeamSpawnRotation;
     }
 }

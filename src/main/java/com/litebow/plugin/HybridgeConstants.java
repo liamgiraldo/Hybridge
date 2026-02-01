@@ -12,11 +12,18 @@ public class HybridgeConstants {
 
     public static final Vector3d SPAWN_LOCATION = new Vector3d(678, 121, -68);
 
+    public static final int GOALS_TO_WIN = 5;
+
     public static final ItemStack RED_BLOCK = new ItemStack("Soil_Clay_Smooth_Red", 100);
     public static final ItemStack BLUE_BLOCK = new ItemStack("Soil_Clay_Smooth_Blue", 100);
     public static final ItemStack WHITE_BLOCK = new ItemStack("Soil_Clay_Smooth_White", 100);
 
-    public static final ItemStack SWORD = new ItemStack("Weapon_Sword_Crude", 1);
+    public static final ItemStack SWORD = new ItemStack("Weapon_Sword_Thorium", 1);
     public static final ItemStack SHIELD = new ItemStack("Weapon_Shield_Wood",1);
-    public static final ItemStack PICK = new ItemStack("Tool_Pickaxe_Iron",1);
+    public static final ItemStack PICK = new ItemStack("Tool_Pickaxe_Cobalt",1);
+    public static final ItemStack BOW = new ItemStack("Weapon_Shortbow_Iron", 1);
+    public static final ItemStack ARROW = new ItemStack("Weapon_Arrow_Crude", 1);
+
+    public static final ItemStack HEAL = new ItemStack("Potion_Health_Greater", 4);
+
 }

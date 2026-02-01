@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.HytaleServer;
 
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,12 @@ public class BridgeGame {
         return false;
     }
 
-    public boolean canTakeDamage(){
+    public boolean canTakeDamage(Player damager, Player damageReceiver){
+        //There will be other conditions later, but for now just prevent team damage
+        //TODO: implement other conditions later
+        if(gameModel.getPlayerTeams().get(damager) != gameModel.getPlayerTeams().get(damageReceiver)){
+            return true;
+        }
         return false;
     }
 
@@ -98,19 +104,22 @@ public class BridgeGame {
                 if(pos.getY() < gameModel.map.getKillPlaneY()){
                     Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " fell below kill plane. Respawning.");
                     teleportPlayerToTeamSpawn(player);
+                    HybridgeUtils.setPlayerHealthFull(player);
                 }
                 //are we within the red goal area?
                 if(HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getRedGoalPos1(), gameModel.map.getRedGoalPos2())){
                     GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
                     switch(playerTeam){
                         case RED:
-                            Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered RED goal area but is on RED team. No score.");
                             teleportPlayerToTeamSpawn(player);
+                            HybridgeUtils.setPlayerHealthFull(player);
                             break;
                         case BLUE:
-                            Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered BLUE goal area. RED team scores!");
-                            gameModel.incrementTeamScore(GameModel.Team.RED);
+                            Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered RED goal area. BLUE team scores!");
+                            gameModel.incrementTeamScore(GameModel.Team.BLUE);
                             teleportAllInGamePlayersToTeamSpawn();
+                            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.BLUE_TEAM_SCORED);
+                            healAllInGamePlayers();
                             break;
                     }
                 }
@@ -121,38 +130,70 @@ public class BridgeGame {
                         case BLUE:
                             Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered BLUE goal area but is on BLUE team. No score.");
                             teleportPlayerToTeamSpawn(player);
+                            HybridgeUtils.setPlayerHealthFull(player);
                             break;
                         case RED:
-                            Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered RED goal area. BLUE team scores!");
-                            gameModel.incrementTeamScore(GameModel.Team.BLUE);
+                            gameModel.incrementTeamScore(GameModel.Team.RED);
                             teleportAllInGamePlayersToTeamSpawn();
+                            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.RED_TEAM_SCORED);
+                            healAllInGamePlayers();
                             break;
                     }
                 }
             });
         }
 
+        if(isGameWon() != null){
+            GameModel.Team winningTeam = isGameWon();
+            Hybridge.LOGGER.atInfo().log("Team " + winningTeam + " has won the game! Stopping game.");
+            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(),
+                    winningTeam == GameModel.Team.RED ? HybridgeMessages.RED_TEAM_WINS : HybridgeMessages.BLUE_TEAM_WINS);
+            stopGame();
+            return;
+        }
+
         if(remainingMs <= 0){
             Hybridge.LOGGER.atInfo().log("Game time over. Stopping game.");
+            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.TIME_OUT);
             stopGame();
         }
     }
 
-    private void teleportPlayerToTeamSpawn(Player player){
+    public void teleportPlayerToTeamSpawn(Player player){
         GameModel.Team team = gameModel.getPlayerTeams().get(player);
         var entityRef = player.getReference();
         Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " to team " + team + " spawn point.");
         if(team == GameModel.Team.RED){
-            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getRedTeamSpawn());
+            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getRedTeamSpawn(), gameModel.map.getRedTeamSpawnRotation());
         } else if(team == GameModel.Team.BLUE){
-            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getBlueTeamSpawn());
+            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getBlueTeamSpawn(), gameModel.map.getBlueTeamSpawnRotation());
         }
+
+        //TODO: separate this logic later
+        HybridgeUtils.clearPlayerInventory(player);
+        HybridgeUtils.providePlayerWithBridgeItems(player, team);
     }
 
     private void teleportAllInGamePlayersToTeamSpawn(){
         for(Player player : gameModel.getPlayersInGameSet()){
             teleportPlayerToTeamSpawn(player);
         }
+    }
+
+    private void healAllInGamePlayers(){
+        for(Player player : gameModel.getPlayersInGameSet()){
+            HybridgeUtils.setPlayerHealthFull(player);
+        }
+    }
+
+    private GameModel.Team isGameWon(){
+        if(gameModel.getTeamScore(GameModel.Team.RED) >= HybridgeConstants.GOALS_TO_WIN){
+            return GameModel.Team.RED;
+        }
+        else if(gameModel.getTeamScore(GameModel.Team.BLUE) >= HybridgeConstants.GOALS_TO_WIN){
+            return GameModel.Team.BLUE;
+        }
+        return null;
     }
 
     //BridgeGame handles all logic, rules, and state transitions for a single game instance.

@@ -113,4 +113,14 @@ public class GameModel {
             blueGoals++;
         }
     }
+
+    public int getTeamScore(Team team){
+        if(team == Team.RED){
+            return redGoals;
+        }
+        else if(team == Team.BLUE){
+            return blueGoals;
+        }
+        return 0;
+    }
 }

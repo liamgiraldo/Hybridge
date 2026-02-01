@@ -1,6 +1,7 @@
 package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -34,6 +35,9 @@ public class BridgeService {
         Vector3i mapBound1 = new Vector3i(657,173,-74);
         Vector3i mapBound2 = new Vector3i(719,159,-56);
 
+        Vector3f redSpawnRotation = new Vector3f(0, 7.85f, 0);
+        Vector3f blueSpawnRotation = new Vector3f(0, 4.7f,0);
+
         MapModel defaultMap = new MapModel(
                 "Default Bridge Map",
                 "Litebow",
@@ -49,7 +53,10 @@ public class BridgeService {
                 buildAreaMax,
                 killPlaneY,
                 mapBound1,
-                mapBound2
+                mapBound2,
+                redSpawnRotation,
+                blueSpawnRotation
+
         );
 
         BridgeGame newGame = new BridgeGame(defaultMap);
@@ -60,6 +67,15 @@ public class BridgeService {
     }
 
     public boolean joinQueue(Player player){
+        PlayerRef ref = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
+        if(ref == null){
+            return false;
+        }
+        if(playerGameMap.containsKey(ref)){
+            //player is already in a game
+            ref.sendMessage(HybridgeMessages.ALREADY_IN_GAME);
+            return false;
+        }
         BridgeGame gameToJoin = null;
         //find queue with most players
         for(BridgeGame game : games){
