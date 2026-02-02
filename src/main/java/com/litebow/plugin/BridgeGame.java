@@ -90,6 +90,9 @@ public class BridgeGame {
         }
         gameModel.resetGameProperties();
         cancelTimer();
+
+        scoreboard.removeAll();
+        scoreboard = null;
     }
 
     private void cancelTimer() {
