@@ -21,11 +21,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ScorePage {
     private String html = """
-<div style="flex-weight: 3; layout-mode: leftcenterwrap; anchor-left: 50; anchor-right: 0; anchor-top: 1; anchor-bottom: 0; anchor-width: 20; anchor-height: 400">
-  <p id="redScoreLabel" style="color: #ff0000">Red Team Score: </p>
-  <p id="redScore" style="color: #ffffff">0 / 5</p>
-  <p id="blueScoreLabel" style="color: #0400ff">Blue Team Score: </p>
-  <p id="blueScore" style="color: #ffffff">0 / 5</p>
+<div id="main" style="layout-mode: top; anchor-left: 50; anchor-top: 350">
+  <p id="redScoreLabel" style="color: #ff0000">Red Team Score:</p>
+  <p id="redScore" style="color: #ffffff">Text</p>
+  <p id="blueTeamScore" style="color: #0400ff">Blue Team Score:</p>
+  <p id="blueScore" style="color: #ffffff">Text</p>
 </div>
             """;
 
