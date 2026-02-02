@@ -7,13 +7,18 @@ import com.hypixel.hytale.server.core.HytaleServer;
 
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.litebow.plugin.pages.ScorePage;
 
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BridgeGame {
     public GameModel gameModel;
+
+    private ScorePage scoreboard;
 
     private volatile ScheduledFuture<?> gameTimerTask;
     private long remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
@@ -59,7 +64,12 @@ public class BridgeGame {
             Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " to team " + team + " spawn point.");
             teleportPlayerToTeamSpawn(player);
             HybridgeUtils.providePlayerWithBridgeItems(player, team);
+
+            PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
         }
+
+
+        scoreboard = new ScorePage(gameModel.getPlayerRefsInGameSet(), gameModel);
 
         // To whoever reads this code: There is NO WAY THIS IS SAFE.
         // Please help me find a better, safer way to do this! :)
