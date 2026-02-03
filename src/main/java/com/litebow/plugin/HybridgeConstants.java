@@ -4,7 +4,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 public class HybridgeConstants {
-    public static final long GAME_TICK_MILLISECONDS = 100L;
+    public static final long GAME_TICK_MILLISECONDS = 300L;
 
     public static final long GAME_DURATION_MINUTES = (long) 5.0f;
     public static final long GAME_DURATION_MILLISECONDS = GAME_DURATION_MINUTES * 60 * 1000;

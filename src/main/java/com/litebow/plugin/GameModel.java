@@ -20,6 +20,8 @@ public class GameModel {
     private int redGoals = 0;
     private int blueGoals = 0;
 
+    private float timeRemaining = HybridgeConstants.GAME_DURATION_MILLISECONDS;
+
     public enum GameState{
         QUEUEING,
         ACTIVE,
@@ -103,6 +105,7 @@ public class GameModel {
         this.blueGoals = 0;
         this.playerTeams.clear();
         this.gameInGame.clear();
+        this.timeRemaining = HybridgeConstants.GAME_DURATION_MILLISECONDS;
     }
 
     public void incrementTeamScore(Team team){
@@ -122,5 +125,15 @@ public class GameModel {
             return blueGoals;
         }
         return 0;
+    }
+
+    //I know this is weird, sorry
+    public void setTimeRemaining(float timeMs){
+        this.timeRemaining = timeMs;
+    }
+
+    //I should change this later, time should probably just always be stored here instead of BridgeGame
+    public float getTimeRemaining(){
+        return this.timeRemaining;
     }
 }

@@ -3,8 +3,10 @@ package com.litebow.plugin;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +18,6 @@ public class BridgeService {
     private HashMap<PlayerRef, BridgeGame> playerGameMap = new HashMap<>();
 
     public BridgeService(){
-
     }
 
     public void createGame(MapModel map){
@@ -59,7 +60,7 @@ public class BridgeService {
 
         );
 
-        BridgeGame newGame = new BridgeGame(defaultMap);
+        BridgeGame newGame = new BridgeGame(defaultMap, this::stopGame);
         newGame.gameModel.setGameState(GameModel.GameState.QUEUEING);
         games.add(newGame);
 
@@ -89,6 +90,9 @@ public class BridgeService {
             gameToJoin.gameModel.addPlayerToQueue(player);
             return true;
         }
+        else{
+            ref.sendMessage(HybridgeMessages.NO_AVAILABLE_GAMES);
+        }
         return false;
     }
 
@@ -98,8 +102,8 @@ public class BridgeService {
     }
 
     public void stopGame(BridgeGame game){
-        game.stopGame();
-        game.gameModel.getPlayersInGameSet().forEach(player -> playerGameMap.remove(player));
+        game.gameModel.getPlayerRefsInGameSet().forEach(playerGameMap::remove);
+        game.performStopActions();
     }
 
     public void leaveQueue(PlayerRef player){

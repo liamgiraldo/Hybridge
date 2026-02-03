@@ -2,12 +2,14 @@ package com.litebow.plugin;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.HytaleServer;
 
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.litebow.plugin.pages.ScorePage;
 
 import java.util.List;
@@ -16,14 +18,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BridgeGame {
+    public interface GameLifecycleListener{
+        void onGameEnd(BridgeGame game);
+    }
+
     public GameModel gameModel;
+
+    private World world;
 
     private ScorePage scoreboard;
 
     private volatile ScheduledFuture<?> gameTimerTask;
     private long remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
 
-    public BridgeGame(MapModel map){
+    private final GameLifecycleListener lifecycleListener;
+
+    public BridgeGame(MapModel map, GameLifecycleListener lifecycleListener){
+        this.lifecycleListener = lifecycleListener;
         this.gameModel = new GameModel(map);
     }
 
@@ -68,6 +79,12 @@ public class BridgeGame {
             PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
         }
 
+        //this is so astronomically fucked but I don't know a better way to do it right now
+        gameModel.getPlayersInGameSet().stream().findFirst().ifPresent(player -> {
+            World world = player.getReference().getStore().getExternalData().getWorld();
+            this.world = world;
+        });
+
 
         scoreboard = new ScorePage(gameModel.getPlayerRefsInGameSet(), gameModel);
 
@@ -76,10 +93,11 @@ public class BridgeGame {
         gameTimerTask = HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(()->{
             update();
             remainingMs -= HybridgeConstants.GAME_TICK_MILLISECONDS;
+            gameModel.setTimeRemaining(remainingMs);
         },0, HybridgeConstants.GAME_TICK_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 
-    public void stopGame() {
+    public void performStopActions() {
         gameModel.setGameState(GameModel.GameState.QUEUEING);
         for (Player player : gameModel.getPlayersInGameSet()) {
             //teleport players back to lobby or some safe location
@@ -87,9 +105,16 @@ public class BridgeGame {
             Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " back to lobby.");
             HybridgeUtils.teleportPlayer(entityRef, HybridgeConstants.SPAWN_LOCATION);
             HybridgeUtils.clearPlayerInventory(player);
+
+            PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
+            EventTitleUtil.showEventTitleToPlayer(playerRef, HybridgeMessages.TITLE_GAME_ENDED, HybridgeMessages.SUBTITLE_GAME_ENDED, true, null, 3, 1, 1);
         }
-        gameModel.resetGameProperties();
+
         cancelTimer();
+
+        //TODO: This isn't removing the player from the BridgeService's playerGameMap, fix that
+
+        gameModel.resetGameProperties();
 
         scoreboard.removeAll();
         scoreboard = null;
@@ -105,6 +130,10 @@ public class BridgeGame {
     }
 
     private void update(){
+        //THIS IS SO SCUFFFFEEEEDDDDD
+        world.execute(() -> {
+
+
         if(gameModel.getCurrentState() != GameModel.GameState.ACTIVE){
             return;
         }
@@ -132,6 +161,12 @@ public class BridgeGame {
                             gameModel.incrementTeamScore(GameModel.Team.BLUE);
                             teleportAllInGamePlayersToTeamSpawn();
                             HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.BLUE_TEAM_SCORED);
+                            HybridgeUtils.showTitleToCollectionOfPlayers(gameModel.getPlayerRefsInGameSet(),
+                                    HybridgeMessages.TITLE_BLUE_SCORED,
+                                    Message.empty(),
+                                    1,
+                                    1,
+                                    1);
                             healAllInGamePlayers();
                             break;
                     }
@@ -149,11 +184,18 @@ public class BridgeGame {
                             gameModel.incrementTeamScore(GameModel.Team.RED);
                             teleportAllInGamePlayersToTeamSpawn();
                             HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.RED_TEAM_SCORED);
+                            HybridgeUtils.showTitleToCollectionOfPlayers(gameModel.getPlayerRefsInGameSet(),
+                                    HybridgeMessages.TITLE_RED_SCORED,
+                                    Message.empty(),
+                                    1,
+                                    1,
+                                    1);
                             healAllInGamePlayers();
                             break;
                     }
                 }
             });
+
         }
 
         if(isGameWon() != null){
@@ -161,15 +203,17 @@ public class BridgeGame {
             Hybridge.LOGGER.atInfo().log("Team " + winningTeam + " has won the game! Stopping game.");
             HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(),
                     winningTeam == GameModel.Team.RED ? HybridgeMessages.RED_TEAM_WINS : HybridgeMessages.BLUE_TEAM_WINS);
-            stopGame();
+            requestStopFromService();
             return;
         }
 
         if(remainingMs <= 0){
             Hybridge.LOGGER.atInfo().log("Game time over. Stopping game.");
             HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.TIME_OUT);
-            stopGame();
+            requestStopFromService();
         }
+
+        });
     }
 
     public void teleportPlayerToTeamSpawn(Player player){
@@ -208,6 +252,13 @@ public class BridgeGame {
         }
         return null;
     }
+
+    private void requestStopFromService() {
+        if (lifecycleListener != null) {
+            lifecycleListener.onGameEnd(this);
+        }
+    }
+
 
     //BridgeGame handles all logic, rules, and state transitions for a single game instance.
 }

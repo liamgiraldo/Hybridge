@@ -26,6 +26,8 @@ public class ScorePage {
   <p id="redScore" style="color: #ffffff">Text</p>
   <p id="blueTeamScore" style="color: #0400ff">Blue Team Score:</p>
   <p id="blueScore" style="color: #ffffff">Text</p>
+  <p id="timeLabel" style="color: #ffffff">Time Remaining: </p>
+  <p id="time" style="color: #ffffff">Text</p>
 </div>
             """;
 
@@ -43,6 +45,13 @@ public class ScorePage {
                     });
                     hyUIHud.getById("redScore", LabelBuilder.class).ifPresent(labelBuilder -> {
                         labelBuilder.withText(""+game.getTeamScore(GameModel.Team.RED));
+                    });
+                    hyUIHud.getById("time", LabelBuilder.class).ifPresent(labelBuilder -> {
+                        long remainingMs = (long)game.getTimeRemaining();
+                        long seconds = (remainingMs / 1000) % 60;
+                        long minutes = (remainingMs / (1000 * 60)) % 60;
+                        String timeString = String.format("%02d:%02d", minutes, seconds);
+                        labelBuilder.withText(timeString);
                     });
                 }
         );

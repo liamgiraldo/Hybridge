@@ -21,6 +21,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntitySta
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
 import java.util.Objects;
 
@@ -180,5 +181,11 @@ public class HybridgeUtils {
                 statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
             }
         });
+    }
+
+    public static void showTitleToCollectionOfPlayers(java.util.Collection<PlayerRef> players, Message title, Message subtitle, int fadeInMs, int stayMs, int fadeOutMs){
+        for(PlayerRef player : players){
+            EventTitleUtil.showEventTitleToPlayer(player, title, subtitle, true, null,stayMs, fadeInMs, fadeOutMs);
+        }
     }
 }

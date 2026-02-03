@@ -3,6 +3,7 @@ package com.litebow.plugin;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.litebow.plugin.commands.BridgeCommand;
 import com.litebow.plugin.commands.RotationCommand;
 import com.litebow.plugin.events.BlockBreakEvent;
