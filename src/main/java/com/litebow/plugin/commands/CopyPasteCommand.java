@@ -96,25 +96,19 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
 
         world.execute(()-> {
             List<CopiedBlock> blockData = new ArrayList<>();
-            for (int x = min.x; x <= max.x; x++) {
-                for (int y = min.y; y <= max.y; y++) {
-                    for (int z = min.z; z <= max.z; z++) {
+            for (int x = min.x + 1; x < max.x; x++) {
+                for (int y = min.y; y < max.y; y++) {
+                    for (int z = min.z + 1; z < max.z; z++) {
                         Vector3i currentPos = new Vector3i(x, y, z);
                         BlockType blockType = world.getBlockType(currentPos);
 
-                        //position relative to the copy position
                         Vector3i relativeToCopy = new Vector3i(
                                 currentPos.x - copyPos.x,
                                 currentPos.y - copyPos.y,
                                 currentPos.z - copyPos.z
                         );
 
-                        CopiedBlock copiedBlock = new CopiedBlock(
-                                relativeToCopy,
-                                currentPos,
-                                blockType
-                        );
-                        blockData.add(copiedBlock);
+                        blockData.add(new CopiedBlock(relativeToCopy, currentPos, blockType));
                     }
                 }
             }
@@ -148,7 +142,7 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
                             basePos.y + copiedBlock.relativePos.y,
                             basePos.z + copiedBlock.relativePos.z
                     );
-                    if(copiedBlock.blockType == null || copiedBlock.blockType.getGroup().equals("Air")) continue;
+                    if(copiedBlock.blockType == null) continue;
                     var key = copiedBlock.blockType.getId();
                     world.setBlock(targetPos.x, targetPos.y, targetPos.z, key);
                 }

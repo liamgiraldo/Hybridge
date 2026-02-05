@@ -19,7 +19,6 @@ public class MapModel {
      * building bounds (area within which players can place blocks),
      * map's origin point (usually at the center of the bridge structure).
      * */
-    private Vector3d mapOrigin;
     private Vector3d redTeamSpawn;
     private Vector3d blueTeamSpawn;
 
@@ -37,6 +36,8 @@ public class MapModel {
     //these should encompass the entire map area for saving /loading purposes
     private Vector3i mapBound1;
     private Vector3i mapBound2;
+    //this is for copying and pasting the map relative to an origin point
+    private Vector3d mapOrigin;
 
     public MapModel(String mapName, String mapAuthor, String mapDescription,
                     Vector3d mapOrigin,
@@ -79,10 +80,6 @@ public class MapModel {
         return mapDescription;
     }
 
-    public Vector3d getMapOrigin() {
-        return mapOrigin;
-    }
-
     public Vector3d getRedTeamSpawn() {
         return redTeamSpawn;
     }
@@ -119,12 +116,54 @@ public class MapModel {
         return killPlaneY;
     }
 
+    public Vector3i getMapOrigin() {
+        //idk why maporigin is a 3d when it really should be a 3i
+        //TODO: fix tech debt later
+        return new Vector3i((int)mapOrigin.getX(), (int)mapOrigin.getY(), (int)mapOrigin.getZ());
+    }
+
     public Vector3i getMapBound1() {
         return mapBound1;
     }
 
     public Vector3i getMapBound2() {
         return mapBound2;
+    }
+
+    //I need new getters that account for a z offset
+    //this feels really clunky
+    public Vector3d getRedTeamSpawnWithOffset(int zOffset) {
+        return new Vector3d(redTeamSpawn.getX(), redTeamSpawn.getY(), redTeamSpawn.getZ() + zOffset);
+    }
+    public Vector3d getBlueTeamSpawnWithOffset(int zOffset) {
+        return new Vector3d(blueTeamSpawn.getX(), blueTeamSpawn.getY(), blueTeamSpawn.getZ() + zOffset);
+    }
+    public Vector3d getBuildAreaMinWithOffset(int zOffset) {
+        return new Vector3d(buildAreaMin.getX(), buildAreaMin.getY(), buildAreaMin.getZ() + zOffset);
+    }
+    public Vector3d getBuildAreaMaxWithOffset(int zOffset) {
+        return new Vector3d(buildAreaMax.getX(), buildAreaMax.getY(), buildAreaMax.getZ() + zOffset);
+    }
+    public Vector3d getRedGoalPos1WithOffset(int zOffset) {
+        return new Vector3d(redGoalPos1.getX(), redGoalPos1.getY(), redGoalPos1.getZ() + zOffset);
+    }
+    public Vector3d getRedGoalPos2WithOffset(int zOffset) {
+        return new Vector3d(redGoalPos2.getX(), redGoalPos2.getY(), redGoalPos2.getZ() + zOffset);
+    }
+    public Vector3d getBlueGoalPos1WithOffset(int zOffset) {
+        return new Vector3d(blueGoalPos1.getX(), blueGoalPos1.getY(), blueGoalPos1.getZ() + zOffset);
+    }
+    public Vector3d getBlueGoalPos2WithOffset(int zOffset) {
+        return new Vector3d(blueGoalPos2.getX(), blueGoalPos2.getY(), blueGoalPos2.getZ() + zOffset);
+    }
+    public Vector3i getMapBound1WithOffset(int zOffset) {
+        return new Vector3i(mapBound1.getX(), mapBound1.getY(), mapBound1.getZ() + zOffset);
+    }
+    public Vector3i getMapBound2WithOffset(int zOffset) {
+        return new Vector3i(mapBound2.getX(), mapBound2.getY(), mapBound2.getZ() + zOffset);
+    }
+    public Vector3i getMapOriginWithOffset(int zOffset) {
+        return new Vector3i((int)mapOrigin.getX(), (int)mapOrigin.getY(), (int)mapOrigin.getZ() + zOffset);
     }
 
     public Vector3f getRedTeamSpawnRotation() {

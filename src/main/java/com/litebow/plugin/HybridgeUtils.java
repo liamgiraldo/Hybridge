@@ -4,6 +4,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockPosition;
 import com.hypixel.hytale.protocol.Rotation;
 import com.hypixel.hytale.protocol.Transform;
@@ -22,7 +23,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
+import com.litebow.plugin.commands.CopyPasteCommand;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class HybridgeUtils {
@@ -168,6 +172,12 @@ public class HybridgeUtils {
         }
     }
 
+    public static void sendMessageToCollectionOfPlayerRefs(java.util.Collection<PlayerRef> players, Message message){
+        for(PlayerRef player : players){
+            player.sendMessage(message);
+        }
+    }
+
     public static void setPlayerHealthFull(Player player){
         var ref = player.getReference();
         if (ref == null || !ref.isValid()) return;
@@ -187,5 +197,90 @@ public class HybridgeUtils {
         for(PlayerRef player : players){
             EventTitleUtil.showEventTitleToPlayer(player, title, subtitle, true, null,stayMs, fadeInMs, fadeOutMs);
         }
+    }
+
+
+
+    private static class CopiedBlock{
+        public Vector3i relativePos;
+        public Vector3i globalPos;
+        public BlockType blockType;
+        public CopiedBlock(Vector3i relativePos, Vector3i globalPos, BlockType blockType){
+            this.relativePos = relativePos;
+            this.globalPos = globalPos;
+            this.blockType = blockType;
+        }
+    }
+
+    public static ArrayList<CopiedBlock> getBlocksInArea(World world, Vector3i pos1, Vector3i pos2, Vector3i relativePos) {
+        ArrayList<CopiedBlock> blocks = new ArrayList<>();
+
+        Vector3i min = new Vector3i(
+                Math.min(pos1.x, pos2.x),
+                Math.min(pos1.y, pos2.y),
+                Math.min(pos1.z, pos2.z)
+        );
+        Vector3i max = new Vector3i(
+                Math.max(pos1.x, pos2.x),
+                Math.max(pos1.y, pos2.y),
+                Math.max(pos1.z, pos2.z)
+        );
+        world.execute(() -> {
+            for (int x = min.x + 1; x < max.x; x++) {
+                for (int y = min.y; y < max.y; y++) {
+                    for (int z = min.z + 1; z < max.z; z++) {
+                        Vector3i currentPos = new Vector3i(x, y, z);
+                        BlockType blockType = world.getBlockType(currentPos);
+
+                        Vector3i relativeToCopy = new Vector3i(
+                                currentPos.x - relativePos.x,
+                                currentPos.y - relativePos.y,
+                                currentPos.z - relativePos.z
+                        );
+                        blocks.add(new CopiedBlock(relativeToCopy, currentPos, blockType));
+                    }
+                }
+            }
+        });
+        return blocks;
+    }
+
+    public static void setBlocksInArea(World world, Vector3i basePos, ArrayList<CopiedBlock> blocks) {
+        world.execute(() -> {
+            for (CopiedBlock copiedBlock : blocks) {
+                Vector3i targetPos = new Vector3i(
+                        basePos.x + copiedBlock.relativePos.x,
+                        basePos.y + copiedBlock.relativePos.y,
+                        basePos.z + copiedBlock.relativePos.z
+                );
+                if(copiedBlock.blockType == null) continue;
+                var key = copiedBlock.blockType.getId();
+                world.setBlock(targetPos.x, targetPos.y, targetPos.z, key);
+            }
+        });
+    }
+
+    public static void setBlocksInAreaAir(World world, Vector3i pos1, Vector3i pos2) {
+        Vector3i min = new Vector3i(
+                Math.min(pos1.x, pos2.x),
+                Math.min(pos1.y, pos2.y),
+                Math.min(pos1.z, pos2.z)
+        );
+        Vector3i max = new Vector3i(
+                Math.max(pos1.x, pos2.x),
+                Math.max(pos1.y, pos2.y),
+                Math.max(pos1.z, pos2.z)
+        );
+        world.execute(() -> {
+            for (int x = min.x + 1; x < max.x; x++) {
+                for (int y = min.y + 1; y < max.y; y++) {
+                    for (int z = min.z + 1; z < max.z; z++) {
+                        Vector3i currentPos = new Vector3i(x, y, z);
+                        world.setBlock(currentPos.x, currentPos.y, currentPos.z, "AIR");
+                    }
+                }
+            }
+        });
+
     }
 }

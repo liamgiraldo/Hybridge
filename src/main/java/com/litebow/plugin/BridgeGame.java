@@ -33,15 +33,18 @@ public class BridgeGame {
 
     private final GameLifecycleListener lifecycleListener;
 
-    public BridgeGame(MapModel map, GameLifecycleListener lifecycleListener){
+    private int zOffset = 0;
+
+    public BridgeGame(MapModel map, GameLifecycleListener lifecycleListener, int zOffset){
         this.lifecycleListener = lifecycleListener;
         this.gameModel = new GameModel(map);
+        this.zOffset = zOffset;
     }
 
     public boolean canPlaceBlock(Vector3i blockPosition){
         //you also can't place blocks during the starting / stopping phases but that's not implemented yet
         //TODO: implement that
-        return HybridgeUtils.isPositionWithinArea(blockPosition.toVector3d(), gameModel.map.getBuildAreaMin(), gameModel.map.getBuildAreaMax());
+        return HybridgeUtils.isPositionWithinArea(blockPosition.toVector3d(), gameModel.map.getBuildAreaMinWithOffset(zOffset), gameModel.map.getBuildAreaMaxWithOffset(zOffset));
     }
 
     public boolean canBreakBlock(BlockType blockType, Vector3i blockPosition){
@@ -106,6 +109,8 @@ public class BridgeGame {
             HybridgeUtils.teleportPlayer(entityRef, HybridgeConstants.SPAWN_LOCATION);
             HybridgeUtils.clearPlayerInventory(player);
 
+            resetGameMap();
+
             PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
             EventTitleUtil.showEventTitleToPlayer(playerRef, HybridgeMessages.TITLE_GAME_ENDED, HybridgeMessages.SUBTITLE_GAME_ENDED, true, null, 3, 1, 1);
         }
@@ -149,7 +154,7 @@ public class BridgeGame {
                     HybridgeUtils.setPlayerHealthFull(player);
                 }
                 //are we within the red goal area?
-                if(HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getRedGoalPos1(), gameModel.map.getRedGoalPos2())){
+                if(HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getRedGoalPos1WithOffset(zOffset), gameModel.map.getRedGoalPos2WithOffset(zOffset))){
                     GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
                     switch(playerTeam){
                         case RED:
@@ -172,7 +177,7 @@ public class BridgeGame {
                     }
                 }
                 //are we within the blue goal area?
-                if(HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getBlueGoalPos1(), gameModel.map.getBlueGoalPos2())){
+                if(HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getBlueGoalPos1WithOffset(zOffset), gameModel.map.getBlueGoalPos2WithOffset(zOffset))){
                     GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
                     switch(playerTeam){
                         case BLUE:
@@ -221,9 +226,9 @@ public class BridgeGame {
         var entityRef = player.getReference();
         Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " to team " + team + " spawn point.");
         if(team == GameModel.Team.RED){
-            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getRedTeamSpawn(), gameModel.map.getRedTeamSpawnRotation());
+            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getRedTeamSpawnWithOffset(zOffset), gameModel.map.getRedTeamSpawnRotation());
         } else if(team == GameModel.Team.BLUE){
-            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getBlueTeamSpawn(), gameModel.map.getBlueTeamSpawnRotation());
+            HybridgeUtils.teleportPlayer(entityRef, gameModel.map.getBlueTeamSpawnWithOffset(zOffset), gameModel.map.getBlueTeamSpawnRotation());
         }
 
         //TODO: separate this logic later
@@ -257,6 +262,21 @@ public class BridgeGame {
         if (lifecycleListener != null) {
             lifecycleListener.onGameEnd(this);
         }
+    }
+
+
+    private void resetGameMap(){
+        //we're going to copy the original map area, and paste it where this game instance is located
+        var block = HybridgeUtils.getBlocksInArea(world, gameModel.map.getMapBound1(), gameModel.map.getMapBound2(), gameModel.map.getMapOrigin());
+        HybridgeUtils.setBlocksInArea(world, gameModel.map.getMapOriginWithOffset(zOffset), block);
+    }
+
+    public World getWorld() {
+        return world;
+    }
+
+    public int getzOffset() {
+        return zOffset;
     }
 
 

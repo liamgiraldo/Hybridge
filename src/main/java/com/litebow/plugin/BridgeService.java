@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.litebow.plugin.maps.PlaceholderMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,51 +21,30 @@ public class BridgeService {
     public BridgeService(){
     }
 
-    public void createGame(MapModel map){
-        //I know this passes in a MapModel, but i'm going to ignore it for now and create a default map
-        Vector3d redSpawn = new Vector3d(715,172,-65);
-        Vector3d blueSpawn = new Vector3d(661,172,-65);
-        Vector3d mapOrigin = new Vector3d(688,168,-65);
-        Vector3d redGoalPos1 = new Vector3d(715,166,-66);
-        Vector3d redGoalPos2 = new Vector3d(717,166,-64);
-        Vector3d blueGoalPos1 = new Vector3d(659,166,-66);
-        Vector3d blueGoalPos2 = new Vector3d(661,166,-64);
-        Vector3d buildAreaMin = new Vector3d(713,159,-56);
-        Vector3d buildAreaMax = new Vector3d(663,173,-74);
-        double killPlaneY = 155;
+    public void createGame(MapModel map, World world){
+        var mapOrigin = map.getMapOrigin();
+        //so this might be a littel confusing, but we're going to copy the map to create a new game instance
+        var zWidth = map.getMapBound2().getZ() - map.getMapBound1().getZ();
 
-        Vector3i mapBound1 = new Vector3i(657,173,-74);
-        Vector3i mapBound2 = new Vector3i(719,159,-56);
-
-        Vector3f redSpawnRotation = new Vector3f(0, 7.85f, 0);
-        Vector3f blueSpawnRotation = new Vector3f(0, 4.7f,0);
-
-        MapModel defaultMap = new MapModel(
-                "Default Bridge Map",
-                "Litebow",
-                "A simple default map for Bridge games.",
-                mapOrigin,
-                redSpawn,
-                blueSpawn,
-                redGoalPos1,
-                redGoalPos2,
-                blueGoalPos1,
-                blueGoalPos2,
-                buildAreaMin,
-                buildAreaMax,
-                killPlaneY,
-                mapBound1,
-                mapBound2,
-                redSpawnRotation,
-                blueSpawnRotation
-
+        int zOffset = (int)(zWidth * games.size() + 1);
+        Vector3i pastePosition = new Vector3i(
+                (int)mapOrigin.getX(),
+                (int)mapOrigin.getY(),
+                (int)(mapOrigin.getZ() + zOffset)
         );
 
-        BridgeGame newGame = new BridgeGame(defaultMap, this::stopGame);
+        //copy the map to the new position
+        var copiedBlocks = HybridgeUtils.getBlocksInArea(world,
+                map.getMapBound1(),
+                map.getMapBound2(), map.getMapOrigin()
+        );
+        HybridgeUtils.setBlocksInArea(world, pastePosition, copiedBlocks);
+
+        BridgeGame newGame = new BridgeGame(map, this::stopGame, zOffset);
         newGame.gameModel.setGameState(GameModel.GameState.QUEUEING);
         games.add(newGame);
 
-        Hybridge.LOGGER.atInfo().log("Created new Bridge game with default map.");
+        Hybridge.LOGGER.atInfo().log("Created new Bridge game with " + map.getMapName() + " at offset " + zOffset);
     }
 
     public boolean joinQueue(Player player){
@@ -119,5 +99,15 @@ public class BridgeService {
 
     public BridgeGame getPlayerGame(PlayerRef player){
         return playerGameMap.get(player);
+    }
+
+    public void removeAllGames(){
+        for(BridgeGame game : games){
+            stopGame(game);
+            //by this point the maps should already have been reset but we need to literally DELETE them
+            HybridgeUtils.setBlocksInAreaAir(game.getWorld(), game.gameModel.map.getMapBound1WithOffset(game.getzOffset()), game.gameModel.map.getMapBound2WithOffset(game.getzOffset()));
+        }
+        games.clear();
+        playerGameMap.clear();
     }
 }
