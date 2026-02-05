@@ -47,7 +47,7 @@ public class BlockBreakEvent extends EntityEventSystem<EntityStore, BreakBlockEv
         Hybridge.LOGGER.atInfo().log("BlockType: " + blockType.getId());
 
         BridgeGame game = bridgeService.getPlayerGame(playerRef);
-        if (game != null && !game.canBreakBlock(blockType, blockPosition)) {
+        if (game != null && !game.canBreakBlock(blockType, blockPosition, playerRef)) {
             breakBlockEvent.setCancelled(true);
             Hybridge.LOGGER.atInfo().log("Cancelled block break event for player " + playerRef.getUsername() + " in game.");
         }

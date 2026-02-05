@@ -22,6 +22,7 @@ import java.awt.*;
  */
 public class BridgeCommand extends AbstractPlayerCommand {
     private OptionalArg<String> startOrStopArg;
+    private OptionalArg<String> createOrDeleteArg;
 
     private BridgeService bridgeService;
 
@@ -35,6 +36,7 @@ public class BridgeCommand extends AbstractPlayerCommand {
         this.bridgeService = bridgeService;
 
         this.startOrStopArg = this.withOptionalArg("startOrStop", "starts or stops the bridge game", ArgTypes.STRING);
+        this.createOrDeleteArg = this.withOptionalArg("createOrDelete", "creates or deletes a bridge game", ArgTypes.STRING);
 
     }
 
@@ -52,9 +54,25 @@ public class BridgeCommand extends AbstractPlayerCommand {
                 return;
             }
             else if(this.startOrStopArg.get(commandContext).equalsIgnoreCase("stop")){
-                //not implemented yet
                 player.sendMessage(Message.raw("Stopping the bridge game...").color(Color.RED).bold(true));
                 bridgeService.stopGame(bridgeService.getGames().getFirst()); //forcibly stops the first game. In the future, we can add more logic to select which game to stop
+                return;
+            }
+        }
+        else if(this.createOrDeleteArg.get(commandContext) != null){
+            if(!player.hasPermission("bridge.admin")){
+                player.sendMessage(unauthorizedMessage);
+                return;
+            }
+            if(this.createOrDeleteArg.get(commandContext).equalsIgnoreCase("create")){
+                player.sendMessage(Message.raw("Creating a new bridge game...").color(Color.GREEN).bold(true));
+                bridgeService.createGame(com.litebow.plugin.maps.PlaceholderMap.map, world);
+                return;
+            }
+            else if(this.createOrDeleteArg.get(commandContext).equalsIgnoreCase("delete")){
+                player.sendMessage(Message.raw("Deleting the last bridge game...").color(Color.RED).bold(true));
+                //not fully implemented yet
+                bridgeService.removeAllGames();
                 return;
             }
         }

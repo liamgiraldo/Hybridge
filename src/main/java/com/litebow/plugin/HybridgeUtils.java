@@ -276,6 +276,7 @@ public class HybridgeUtils {
                 for (int y = min.y + 1; y < max.y; y++) {
                     for (int z = min.z + 1; z < max.z; z++) {
                         Vector3i currentPos = new Vector3i(x, y, z);
+                        //TODO find the proper key for AIR block
                         world.setBlock(currentPos.x, currentPos.y, currentPos.z, "AIR");
                     }
                 }

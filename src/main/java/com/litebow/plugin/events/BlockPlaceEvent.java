@@ -38,7 +38,7 @@ public class BlockPlaceEvent extends EntityEventSystem<EntityStore, PlaceBlockEv
 
 //        placeBlockEvent.setCancelled(true);
         BridgeGame game = bridgeService.getPlayerGame(playerRef);
-        if(game != null && !game.canPlaceBlock(placeBlockEvent.getTargetBlock())){
+        if(game != null && !game.canPlaceBlock(placeBlockEvent.getTargetBlock(), playerRef)){
             placeBlockEvent.setCancelled(true);
             Hybridge.LOGGER.atInfo().log("Cancelled block place event for player " + playerRef.getUsername());
         }

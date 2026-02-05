@@ -48,7 +48,7 @@ public class Hybridge extends JavaPlugin {
 
         this.getEventRegistry().registerGlobal(com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent.class, new PlayerDisconnectEvent(bridgeService)::onPlayerDisconnect);
 
-        bridgeService.createGame(PlaceholderMap.map, Universe.get().getWorld("default")); //creates a default game on startup
+//        bridgeService.createGame(PlaceholderMap.map, Universe.get().getWorld("default")); //creates a default game on startup
     }
 
     @Override

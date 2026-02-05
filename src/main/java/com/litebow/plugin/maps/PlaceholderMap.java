@@ -20,7 +20,7 @@ public class PlaceholderMap {
                 new Vector3d(713,159,-56),
                 new Vector3d(663,173,-74),
                 155,
-                new Vector3i(657,173,-74),
+                new Vector3i(657,174,-74),
                 new Vector3i(719,159,-56),
                 new Vector3f(0, 7.85f, 0),
                 new Vector3f(0, 4.7f,0)

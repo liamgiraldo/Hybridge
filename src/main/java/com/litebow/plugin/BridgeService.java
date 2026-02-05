@@ -26,7 +26,7 @@ public class BridgeService {
         //so this might be a littel confusing, but we're going to copy the map to create a new game instance
         var zWidth = map.getMapBound2().getZ() - map.getMapBound1().getZ();
 
-        int zOffset = (int)(zWidth * games.size() + 1);
+        int zOffset = (int)(zWidth * (games.size() + 1));
         Vector3i pastePosition = new Vector3i(
                 (int)mapOrigin.getX(),
                 (int)mapOrigin.getY(),
@@ -40,7 +40,7 @@ public class BridgeService {
         );
         HybridgeUtils.setBlocksInArea(world, pastePosition, copiedBlocks);
 
-        BridgeGame newGame = new BridgeGame(map, this::stopGame, zOffset);
+        BridgeGame newGame = new BridgeGame(map, this::stopGame, zOffset, world);
         newGame.gameModel.setGameState(GameModel.GameState.QUEUEING);
         games.add(newGame);
 

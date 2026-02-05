@@ -35,19 +35,28 @@ public class BridgeGame {
 
     private int zOffset = 0;
 
-    public BridgeGame(MapModel map, GameLifecycleListener lifecycleListener, int zOffset){
+    public BridgeGame(MapModel map, GameLifecycleListener lifecycleListener, int zOffset, World world){
         this.lifecycleListener = lifecycleListener;
         this.gameModel = new GameModel(map);
         this.zOffset = zOffset;
+        this.world = world;
     }
 
-    public boolean canPlaceBlock(Vector3i blockPosition){
+    public boolean canPlaceBlock(Vector3i blockPosition, PlayerRef playerRef){
+        //if the player isn't in the game, they CAN place blocks (probably in the lobby)
+        if(!gameModel.getPlayerRefsInGameSet().contains(playerRef)){
+            return true;
+        }
         //you also can't place blocks during the starting / stopping phases but that's not implemented yet
         //TODO: implement that
         return HybridgeUtils.isPositionWithinArea(blockPosition.toVector3d(), gameModel.map.getBuildAreaMinWithOffset(zOffset), gameModel.map.getBuildAreaMaxWithOffset(zOffset));
     }
 
-    public boolean canBreakBlock(BlockType blockType, Vector3i blockPosition){
+    public boolean canBreakBlock(BlockType blockType, Vector3i blockPosition, PlayerRef playerRef){
+        //if the player isn't in the game, they CAN break blocks (probably in the lobby)
+        if(!gameModel.getPlayerRefsInGameSet().contains(playerRef)){
+            return true;
+        }
         if(HybridgeUtils.isBlockValidBridgeBlock(blockType)){
             return true;
         }
@@ -121,7 +130,8 @@ public class BridgeGame {
 
         gameModel.resetGameProperties();
 
-        scoreboard.removeAll();
+        if(scoreboard != null)
+            scoreboard.removeAll();
         scoreboard = null;
     }
 
