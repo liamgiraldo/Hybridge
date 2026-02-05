@@ -5,12 +5,10 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.BlockPosition;
-import com.hypixel.hytale.protocol.Rotation;
-import com.hypixel.hytale.protocol.Transform;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
@@ -20,20 +18,18 @@ import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
-import com.litebow.plugin.commands.CopyPasteCommand;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class HybridgeUtils {
     private HybridgeUtils() {
 
     }
-
 
 
     public static void withEntityPosition(
@@ -78,7 +74,7 @@ public class HybridgeUtils {
 
         world.execute(() -> {
             var transform = store.getComponent(ref, TransformComponent.getComponentType());
-            if(transform != null){
+            if (transform != null) {
                 transform.setRotation(rot);
             }
 
@@ -94,7 +90,7 @@ public class HybridgeUtils {
         });
     }
 
-    public static void setPlayerRotation(PlayerRef player, Vector3f rotation){
+    public static void setPlayerRotation(PlayerRef player, Vector3f rotation) {
         var ref = player.getReference();
         if (ref == null || !ref.isValid()) return;
 
@@ -117,12 +113,11 @@ public class HybridgeUtils {
     public static void providePlayerWithBridgeItems(Player player, GameModel.Team team) {
         //give player items based on their team
         ItemContainer hotbar = player.getInventory().getHotbar();
-        if(team == GameModel.Team.RED){
+        if (team == GameModel.Team.RED) {
             //give red team items
             hotbar.setItemStackForSlot((short) 1, HybridgeConstants.RED_BLOCK);
             hotbar.setItemStackForSlot((short) 2, HybridgeConstants.RED_BLOCK);
-        }
-        else if(team == GameModel.Team.BLUE){
+        } else if (team == GameModel.Team.BLUE) {
             //give blue team items
             hotbar.setItemStackForSlot((short) 1, HybridgeConstants.BLUE_BLOCK);
             hotbar.setItemStackForSlot((short) 2, HybridgeConstants.BLUE_BLOCK);
@@ -133,12 +128,12 @@ public class HybridgeUtils {
         hotbar.setItemStackForSlot((short) 5, HybridgeConstants.BOW);
     }
 
-    public static void clearPlayerInventory(Player player){
+    public static void clearPlayerInventory(Player player) {
         Inventory inventory = player.getInventory();
         inventory.clear();
     }
 
-    public static boolean isPositionWithinArea(Vector3d pos, Vector3d min, Vector3d max){
+    public static boolean isPositionWithinArea(Vector3d pos, Vector3d min, Vector3d max) {
         //sort min and max just in case
         Vector3d realMin = new Vector3d(
                 Math.min(min.x, max.x),
@@ -152,33 +147,33 @@ public class HybridgeUtils {
         );
 
         return (pos.x >= realMin.x && pos.x <= realMax.x) &&
-               (pos.y >= realMin.y && pos.y <= realMax.y) &&
-               (pos.z >= realMin.z && pos.z <= realMax.z);
+                (pos.y >= realMin.y && pos.y <= realMax.y) &&
+                (pos.z >= realMin.z && pos.z <= realMax.z);
     }
 
-    public static boolean isBlockValidBridgeBlock(BlockType blockType){
+    public static boolean isBlockValidBridgeBlock(BlockType blockType) {
         String blockName = blockType.getId();
 
-        if(Objects.equals(blockName, HybridgeConstants.RED_BLOCK.getItemId()) ||
-                Objects.equals(blockName, HybridgeConstants.BLUE_BLOCK.getItemId()) || Objects.equals(blockName, HybridgeConstants.WHITE_BLOCK.getItemId())){
+        if (Objects.equals(blockName, HybridgeConstants.RED_BLOCK.getItemId()) ||
+                Objects.equals(blockName, HybridgeConstants.BLUE_BLOCK.getItemId()) || Objects.equals(blockName, HybridgeConstants.WHITE_BLOCK.getItemId())) {
             return true;
         }
         return false;
     }
 
-    public static void sendMessageToCollectionOfPlayers(java.util.Collection<Player> players, Message message){
-        for(Player player : players){
+    public static void sendMessageToCollectionOfPlayers(java.util.Collection<Player> players, Message message) {
+        for (Player player : players) {
             player.sendMessage(message);
         }
     }
 
-    public static void sendMessageToCollectionOfPlayerRefs(java.util.Collection<PlayerRef> players, Message message){
-        for(PlayerRef player : players){
+    public static void sendMessageToCollectionOfPlayerRefs(java.util.Collection<PlayerRef> players, Message message) {
+        for (PlayerRef player : players) {
             player.sendMessage(message);
         }
     }
 
-    public static void setPlayerHealthFull(Player player){
+    public static void setPlayerHealthFull(Player player) {
         var ref = player.getReference();
         if (ref == null || !ref.isValid()) return;
 
@@ -187,25 +182,25 @@ public class HybridgeUtils {
 
         world.execute(() -> {
             var statMap = (EntityStatMap) store.getComponent(ref, EntityStatMap.getComponentType());
-            if(statMap != null){
+            if (statMap != null) {
                 statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
             }
         });
     }
 
-    public static void showTitleToCollectionOfPlayers(java.util.Collection<PlayerRef> players, Message title, Message subtitle, int fadeInMs, int stayMs, int fadeOutMs){
-        for(PlayerRef player : players){
-            EventTitleUtil.showEventTitleToPlayer(player, title, subtitle, true, null,stayMs, fadeInMs, fadeOutMs);
+    public static void showTitleToCollectionOfPlayers(java.util.Collection<PlayerRef> players, Message title, Message subtitle, int fadeInMs, int stayMs, int fadeOutMs) {
+        for (PlayerRef player : players) {
+            EventTitleUtil.showEventTitleToPlayer(player, title, subtitle, true, null, stayMs, fadeInMs, fadeOutMs);
         }
     }
 
 
-
-    private static class CopiedBlock{
+    private static class CopiedBlock {
         public Vector3i relativePos;
         public Vector3i globalPos;
         public BlockType blockType;
-        public CopiedBlock(Vector3i relativePos, Vector3i globalPos, BlockType blockType){
+
+        public CopiedBlock(Vector3i relativePos, Vector3i globalPos, BlockType blockType) {
             this.relativePos = relativePos;
             this.globalPos = globalPos;
             this.blockType = blockType;
@@ -253,7 +248,7 @@ public class HybridgeUtils {
                         basePos.y + copiedBlock.relativePos.y,
                         basePos.z + copiedBlock.relativePos.z
                 );
-                if(copiedBlock.blockType == null) continue;
+                if (copiedBlock.blockType == null) continue;
                 var key = copiedBlock.blockType.getId();
                 world.setBlock(targetPos.x, targetPos.y, targetPos.z, key);
             }
@@ -276,12 +271,24 @@ public class HybridgeUtils {
                 for (int y = min.y + 1; y < max.y; y++) {
                     for (int z = min.z + 1; z < max.z; z++) {
                         Vector3i currentPos = new Vector3i(x, y, z);
-                        //TODO find the proper key for AIR block
-                        world.setBlock(currentPos.x, currentPos.y, currentPos.z, "AIR");
+                        world.setBlock(currentPos.x, currentPos.y, currentPos.z, "Empty");
                     }
                 }
             }
         });
 
+    }
+
+    public static void playSoundEffectToPlayer(PlayerRef player, String key) {
+        var ref = player.getReference();
+        if (ref == null || !ref.isValid()) return;
+
+        int index = SoundEvent.getAssetMap().getIndex(key);
+
+        World world = ref.getStore().getExternalData().getWorld();
+        world.execute(() -> {
+            TransformComponent transformComponent = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
+            SoundUtil.playSoundEvent3dToPlayer(ref, index, SoundCategory.SFX, transformComponent.getPosition(), ref.getStore());
+        });
     }
 }

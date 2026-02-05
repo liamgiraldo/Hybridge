@@ -19,11 +19,14 @@ public class HybridgeConstants {
     public static final ItemStack WHITE_BLOCK = new ItemStack("Soil_Clay_Smooth_White", 100);
 
     public static final ItemStack SWORD = new ItemStack("Weapon_Sword_Thorium", 1);
-    public static final ItemStack SHIELD = new ItemStack("Weapon_Shield_Wood",1);
-    public static final ItemStack PICK = new ItemStack("Tool_Pickaxe_Cobalt",1);
+    public static final ItemStack SHIELD = new ItemStack("Weapon_Shield_Wood", 1);
+    public static final ItemStack PICK = new ItemStack("Tool_Pickaxe_Cobalt", 1);
     public static final ItemStack BOW = new ItemStack("Weapon_Shortbow_Iron", 1);
     public static final ItemStack ARROW = new ItemStack("Weapon_Arrow_Crude", 1);
 
     public static final ItemStack HEAL = new ItemStack("Potion_Health_Greater", 4);
+
+    public static final String SFX_DIE = "SFX_Player_Death";
+    public static final String SFX_GOAL = "SFX_Discovery_Z1_Short";
 
 }
