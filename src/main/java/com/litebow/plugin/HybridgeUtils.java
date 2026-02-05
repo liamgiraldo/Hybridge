@@ -24,6 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
 
 public class HybridgeUtils {
@@ -290,5 +291,11 @@ public class HybridgeUtils {
             TransformComponent transformComponent = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
             SoundUtil.playSoundEvent3dToPlayer(ref, index, SoundCategory.SFX, transformComponent.getPosition(), ref.getStore());
         });
+    }
+
+    public static void playSoundEffectToPlayers(Collection<PlayerRef> players, String key) {
+        for (PlayerRef player : players) {
+            playSoundEffectToPlayer(player, key);
+        }
     }
 }
