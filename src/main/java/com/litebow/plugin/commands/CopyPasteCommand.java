@@ -44,12 +44,16 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
         public Vector3i pos1;
         public Vector3i pos2;
 
+        public Vector3i copyPosition;
+
         private List<CopiedBlock> blockData = new ArrayList<>();
 
-        public CopyPasteSelection(Vector3i pos1, Vector3i pos2, List<CopiedBlock> blockData) {
+        public CopyPasteSelection(Vector3i pos1, Vector3i pos2, List<CopiedBlock> blockData, Vector3i copyPosition) {
             this.blockData = blockData;
             this.pos1 = pos1;
             this.pos2 = pos2;
+
+            this.copyPosition = copyPosition;
         }
 
         public List<CopiedBlock> getBlockData() {
@@ -71,6 +75,13 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
         PlayerRef playerReference = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
         World playerWorld = playerReference.getReference().getStore().getExternalData().getWorld();
 
+        TransformComponent playerTransform = playerReference.getReference().getStore().getComponent(playerReference.getReference(), TransformComponent.getComponentType());
+        var copyPos = new Vector3i(
+                (int) playerTransform.getPosition().x,
+                (int) playerTransform.getPosition().y,
+                (int) playerTransform.getPosition().z
+        );
+
         Vector3i pos1 = this.blockPos1Arg.get(commandContext);
         Vector3i pos2 = this.blockPos2Arg.get(commandContext);
         Vector3i min = new Vector3i(
@@ -90,8 +101,16 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
                     for (int z = min.z; z <= max.z; z++) {
                         Vector3i currentPos = new Vector3i(x, y, z);
                         BlockType blockType = world.getBlockType(currentPos);
+
+                        //position relative to the copy position
+                        Vector3i relativeToCopy = new Vector3i(
+                                currentPos.x - copyPos.x,
+                                currentPos.y - copyPos.y,
+                                currentPos.z - copyPos.z
+                        );
+
                         CopiedBlock copiedBlock = new CopiedBlock(
-                                new Vector3i(x - min.x, y - min.y, z - min.z),
+                                relativeToCopy,
                                 currentPos,
                                 blockType
                         );
@@ -99,7 +118,7 @@ public class CopyPasteCommand extends AbstractPlayerCommand {
                     }
                 }
             }
-            CopyPasteSelection selection = new CopyPasteSelection(pos1, pos2, blockData);
+            CopyPasteSelection selection = new CopyPasteSelection(pos1, pos2, blockData, copyPos);
             selections.put(playerRef, selection);
 
         });
