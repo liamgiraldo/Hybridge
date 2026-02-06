@@ -35,5 +35,7 @@ public class HybridgeConstants {
 
     public static final String SFX_DIE = "SFX_Player_Death";
     public static final String SFX_GOAL = "SFX_Discovery_Z1_Short";
+    // Tick sound for cage countdown. Should probably add separate sound for cage release
+    public static final String SFX_CAGE_COUNTDOWN_TICK = "SFX_Blunderbuss_No_Ammo";
 
 }

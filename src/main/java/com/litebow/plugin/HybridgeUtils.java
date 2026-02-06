@@ -334,4 +334,25 @@ public class HybridgeUtils {
             playSoundEffectToPlayer(player, key);
         }
     }
+
+    /**
+     * Play a sound to multiple players. Must be called from the world thread (e.g. inside world.execute)
+     * so the sound plays immediately without nesting world.execute.
+     */
+    public static void playSoundEffectToPlayersOnWorldThread(Collection<PlayerRef> players, String key) {
+        int index;
+        try {
+            index = SoundEvent.getAssetMap().getIndex(key);
+        } catch (Exception e) {
+            return;
+        }
+        for (PlayerRef player : players) {
+            var ref = player.getReference();
+            if (ref == null || !ref.isValid()) continue;
+            TransformComponent transformComponent = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
+            if (transformComponent != null) {
+                SoundUtil.playSoundEvent3dToPlayer(ref, index, SoundCategory.SFX, transformComponent.getPosition(), ref.getStore());
+            }
+        }
+    }
 }

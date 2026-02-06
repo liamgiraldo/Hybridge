@@ -11,8 +11,10 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.litebow.plugin.pages.ScorePage;
 
+import java.awt.Color;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BridgeGame {
     public interface GameLifecycleListener {
@@ -27,6 +29,7 @@ public class BridgeGame {
 
     private volatile ScheduledFuture<?> gameTimerTask;
     private volatile ScheduledFuture<?> cageCountdownTask;
+    private final AtomicInteger cageCountdownRemaining = new AtomicInteger(0);
     private long remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
 
     private final GameLifecycleListener lifecycleListener;
@@ -313,17 +316,35 @@ public class BridgeGame {
 
             for (Player player : gameModel.getPlayersInGameSet()) {
                 GameModel.Team team = gameModel.getPlayerTeams().get(player);
+                if (team == null) continue;
                 Vector3d cagePos = team == GameModel.Team.RED ? cageCenterToTeleportPosition(redCenter) : cageCenterToTeleportPosition(blueCenter);
                 HybridgeUtils.teleportPlayer(player.getReference(), cagePos, team == GameModel.Team.RED ? gameModel.map.getRedTeamSpawnRotation() : gameModel.map.getBlueTeamSpawnRotation());
                 HybridgeUtils.providePlayerWithBridgeItems(player, team);
                 HybridgeUtils.setPlayerHealthFull(player);
             }
 
+            cageCountdownRemaining.set(HybridgeConstants.CAGE_COUNTDOWN_SECONDS);
+            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), Message.raw(String.valueOf(HybridgeConstants.CAGE_COUNTDOWN_SECONDS)).color(Color.YELLOW).bold(true));
+            HybridgeUtils.playSoundEffectToPlayersOnWorldThread(gameModel.getPlayerRefsInGameSet(), HybridgeConstants.SFX_CAGE_COUNTDOWN_TICK);
+
             BridgeGame game = this;
-            cageCountdownTask = HytaleServer.SCHEDULED_EXECUTOR.schedule(() -> {
-                // Execute on world thread
-                game.world.execute(() -> game.endCageState());
-            }, HybridgeConstants.CAGE_COUNTDOWN_MILLISECONDS, TimeUnit.MILLISECONDS);
+            final ScheduledFuture<?>[] countdownFutureBox = new ScheduledFuture<?>[1];
+            countdownFutureBox[0] = HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+                int n = game.cageCountdownRemaining.decrementAndGet();
+                ScheduledFuture<?> f = countdownFutureBox[0];
+                game.world.execute(() -> {
+                    if (n > 0) {
+                        HybridgeUtils.sendMessageToCollectionOfPlayers(game.gameModel.getPlayersInGameSet(), Message.raw(String.valueOf(n)).color(Color.YELLOW).bold(true));
+                        HybridgeUtils.playSoundEffectToPlayersOnWorldThread(game.gameModel.getPlayerRefsInGameSet(), HybridgeConstants.SFX_CAGE_COUNTDOWN_TICK);
+                    } else {
+                        HybridgeUtils.sendMessageToCollectionOfPlayers(game.gameModel.getPlayersInGameSet(), Message.raw("Go!").color(Color.GREEN).bold(true));
+                        f.cancel(false);
+                        game.cageCountdownTask = null;
+                        game.endCageState();
+                    }
+                });
+            }, 1, 1, TimeUnit.SECONDS);
+            cageCountdownTask = countdownFutureBox[0];
         });
     }
 
