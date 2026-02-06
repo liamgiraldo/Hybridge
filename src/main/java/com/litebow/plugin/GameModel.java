@@ -24,6 +24,7 @@ public class GameModel {
 
     public enum GameState{
         QUEUEING,
+        CAGE,
         ACTIVE,
         DISABLED
     }

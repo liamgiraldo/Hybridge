@@ -25,11 +25,47 @@ import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 public class HybridgeUtils {
     private HybridgeUtils() {
 
+    }
+
+    /** Relative positions for a hollow 5x5x5 cube (shell only). Each component in [-2, 2]; on shell if any component is ±2. */
+    private static final List<Vector3i> CAGE_SHELL_RELATIVE = new ArrayList<>();
+    static {
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -2; y <= 2; y++) {
+                for (int z = -2; z <= 2; z++) {
+                    if (Math.abs(x) == 2 || Math.abs(y) == 2 || Math.abs(z) == 2) {
+                        CAGE_SHELL_RELATIVE.add(new Vector3i(x, y, z));
+                    }
+                }
+            }
+        }
+    }
+
+    // Potentially could use built in hytale method here... Axiom?
+    /** Place a hollow 5x5x5 cage at the given block position (center of the cube). Call from world thread only. */
+    public static void placeCageSync(World world, Vector3i center) {
+        for (Vector3i rel : CAGE_SHELL_RELATIVE) {
+            int x = center.x + rel.x;
+            int y = center.y + rel.y;
+            int z = center.z + rel.z;
+            world.setBlock(x, y, z, HybridgeConstants.CAGE_BLOCK_ID);
+        }
+    }
+
+    /** Remove a hollow 5x5x5 cage at the given block position (same center as placeCage). Call from world thread only. */
+    public static void removeCageSync(World world, Vector3i center) {
+        for (Vector3i rel : CAGE_SHELL_RELATIVE) {
+            int x = center.x + rel.x;
+            int y = center.y + rel.y;
+            int z = center.z + rel.z;
+            world.setBlock(x, y, z, "Empty");
+        }
     }
 
 
