@@ -77,7 +77,7 @@ public class BridgeGame {
         gameModel.setGameState(GameModel.GameState.ACTIVE);
 
         for (Player player : gameModel.getPlayersInGameSet()) {
-            //teleport players to their team spawn points
+            //teleport players to their team spawn points ***CAGES***
             GameModel.Team team = gameModel.getPlayerTeams().get(player);
             var entityRef = player.getReference();
             Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " to team " + team + " spawn point.");
@@ -141,6 +141,7 @@ public class BridgeGame {
         remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
     }
 
+    // Can move game state + winning out of the loop and swap over to event based triggers
     private void update() {
         //THIS IS SO SCUFFFFEEEEDDDDD
         world.execute(() -> {
@@ -161,6 +162,8 @@ public class BridgeGame {
                         HybridgeUtils.setPlayerHealthFull(player);
                         HybridgeUtils.playSoundEffectToPlayer(player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType()), HybridgeConstants.SFX_DIE);
                     }
+                    // IDEA: are we within any goal areacase with ? two cases: if (isOwnGoal), else if (isNotOwnGoal), then tp all players + add point,
+                    // could add placeholder for case with more than two teams
                     //are we within the red goal area?
                     if (HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getRedGoalPos1WithOffset(zOffset), gameModel.map.getRedGoalPos2WithOffset(zOffset))) {
                         GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
@@ -170,6 +173,7 @@ public class BridgeGame {
                                 HybridgeUtils.setPlayerHealthFull(player);
                                 break;
                             case BLUE:
+                                // Score "event" -> cage state
                                 Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered RED goal area. BLUE team scores!");
                                 gameModel.incrementTeamScore(GameModel.Team.BLUE);
                                 teleportAllInGamePlayersToTeamSpawn();
@@ -195,6 +199,7 @@ public class BridgeGame {
                                 HybridgeUtils.setPlayerHealthFull(player);
                                 break;
                             case RED:
+                                // Score "event" -> cage state
                                 gameModel.incrementTeamScore(GameModel.Team.RED);
                                 teleportAllInGamePlayersToTeamSpawn();
                                 HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.RED_TEAM_SCORED);
