@@ -8,16 +8,16 @@ import org.gradle.internal.os.OperatingSystem
 ext {
     if (project.hasProperty('hytale_home')) {
         hytaleHome = project.findProperty('hytale_home')
-    }
-    else {
+    } else {
         def os = OperatingSystem.current()
         if (os.isWindows()) {
-            hytaleHome = "C:/Users/Gabriel/AppData/Roaming/Hytale"
-        }
-        else if (os.isMacOsX()) {
+            //unfortunately it seems like the gitignore still isn't working right, so,
+//            hytaleHome = "D:/Games/Hytale/HytaleGame" //for liam
+//            hytaleHome = "C:/Users/Gabriel/AppData/Roaming/Hytale" // for gabe
+            hytaleHome = "D:/Games/Hytale/HytaleGame"
+        } else if (os.isMacOsX()) {
             hytaleHome = "${System.getProperty("user.home")}/Library/Application Support/Hytale"
-        }
-        else if (os.isLinux()) {
+        } else if (os.isLinux()) {
             hytaleHome = "${System.getProperty("user.home")}/.var/app/com.hypixel.HytaleLauncher/data/Hytale"
             if (!file(hytaleHome).exists()) {
                 hytaleHome = "${System.getProperty("user.home")}/.local/share/Hytale"
@@ -28,8 +28,7 @@ ext {
 
 if (!project.hasProperty('hytaleHome')) {
     throw new GradleException('Your Hytale install could not be detected automatically. If you are on an unsupported platform or using a custom install location, please define the install location using the hytale_home property.');
-}
-else if (!file(project.findProperty('hytaleHome')).exists()) {
+} else if (!file(project.findProperty('hytaleHome')).exists()) {
     throw new GradleException("Failed to find Hytale at the expected location. Please make sure you have installed the game. The expected location can be changed using the hytale_home property. Currently looking in ${project.findProperty('hytaleHome')}")
 }
 
@@ -119,17 +118,17 @@ tasks.register('generateVSCodeLaunch') {
         }
         def programParams = createServerRunArguments("\${workspaceFolder}")
         def launchConfig = [
-            version: "0.2.0",
-            configurations: [
-                [
-                    type: "java",
-                    name: "HytaleServer",
-                    request: "launch",
-                    mainClass: "com.hypixel.hytale.Main",
-                    args: programParams,
-                    cwd: "\${workspaceFolder}/run"
+                version       : "0.2.0",
+                configurations: [
+                        [
+                                type     : "java",
+                                name     : "HytaleServer",
+                                request  : "launch",
+                                mainClass: "com.hypixel.hytale.Main",
+                                args     : programParams,
+                                cwd      : "\${workspaceFolder}/run"
+                        ]
                 ]
-            ]
         ]
         launchFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(launchConfig))
     }
