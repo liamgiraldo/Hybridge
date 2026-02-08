@@ -14,6 +14,13 @@ public class HybridgeConstants {
 
     public static final int GOALS_TO_WIN = 5;
 
+    public static final int CAGE_COUNTDOWN_SECONDS = 5;
+    public static final long CAGE_COUNTDOWN_MILLISECONDS = CAGE_COUNTDOWN_SECONDS * 1000L;
+    // Temporary, to be replaced with value map setup file
+    public static final int CAGE_HEIGHT_ABOVE_SPAWN = 4;
+    // Temporary, to be removed with addition of cage templates
+    public static final String CAGE_BLOCK_ID = "Barrier";
+
     public static final ItemStack RED_BLOCK = new ItemStack("Soil_Clay_Smooth_Red", 100);
     public static final ItemStack BLUE_BLOCK = new ItemStack("Soil_Clay_Smooth_Blue", 100);
     public static final ItemStack WHITE_BLOCK = new ItemStack("Soil_Clay_Smooth_White", 100);
@@ -28,5 +35,7 @@ public class HybridgeConstants {
 
     public static final String SFX_DIE = "SFX_Player_Death";
     public static final String SFX_GOAL = "SFX_Discovery_Z1_Short";
+    // Tick sound for cage countdown. Should probably add separate sound for cage release
+    public static final String SFX_CAGE_COUNTDOWN_TICK = "SFX_Blunderbuss_No_Ammo";
 
 }

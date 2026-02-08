@@ -1,5 +1,6 @@
 package com.litebow.plugin;
 
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
@@ -10,8 +11,10 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.litebow.plugin.pages.ScorePage;
 
+import java.awt.Color;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BridgeGame {
     public interface GameLifecycleListener {
@@ -25,6 +28,8 @@ public class BridgeGame {
     private ScorePage scoreboard;
 
     private volatile ScheduledFuture<?> gameTimerTask;
+    private volatile ScheduledFuture<?> cageCountdownTask;
+    private final AtomicInteger cageCountdownRemaining = new AtomicInteger(0);
     private long remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
 
     private final GameLifecycleListener lifecycleListener;
@@ -43,8 +48,9 @@ public class BridgeGame {
         if (!gameModel.getPlayerRefsInGameSet().contains(playerRef)) {
             return true;
         }
-        //you also can't place blocks during the starting / stopping phases but that's not implemented yet
-        //TODO: implement that
+        if (gameModel.getCurrentState() == GameModel.GameState.CAGE) {
+            return false;
+        }
         return HybridgeUtils.isPositionWithinArea(blockPosition.toVector3d(), gameModel.map.getBuildAreaMinWithOffset(zOffset), gameModel.map.getBuildAreaMaxWithOffset(zOffset));
     }
 
@@ -52,6 +58,9 @@ public class BridgeGame {
         //if the player isn't in the game, they CAN break blocks (probably in the lobby)
         if (!gameModel.getPlayerRefsInGameSet().contains(playerRef)) {
             return true;
+        }
+        if (gameModel.getCurrentState() == GameModel.GameState.CAGE) {
+            return false;
         }
         if (HybridgeUtils.isBlockValidBridgeBlock(blockType)) {
             return true;
@@ -74,26 +83,13 @@ public class BridgeGame {
 
     public void startGame() {
         gameModel.transferAllPlayersToGame();
-        gameModel.setGameState(GameModel.GameState.ACTIVE);
-
-        for (Player player : gameModel.getPlayersInGameSet()) {
-            //teleport players to their team spawn points
-            GameModel.Team team = gameModel.getPlayerTeams().get(player);
-            var entityRef = player.getReference();
-            Hybridge.LOGGER.atInfo().log("Teleporting player " + player.getDisplayName() + " to team " + team + " spawn point.");
-            teleportPlayerToTeamSpawn(player);
-            HybridgeUtils.providePlayerWithBridgeItems(player, team);
-
-            PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
-            HybridgeUtils.setPlayerHealthFull(player);
-        }
+        gameModel.setGameState(GameModel.GameState.CAGE);
 
         //this is so astronomically fucked but I don't know a better way to do it right now
         gameModel.getPlayersInGameSet().stream().findFirst().ifPresent(player -> {
             World world = player.getReference().getStore().getExternalData().getWorld();
             this.world = world;
         });
-
 
         scoreboard = new ScorePage(gameModel.getPlayerRefsInGameSet(), gameModel);
 
@@ -104,9 +100,18 @@ public class BridgeGame {
             remainingMs -= HybridgeConstants.GAME_TICK_MILLISECONDS;
             gameModel.setTimeRemaining(remainingMs);
         }, 0, HybridgeConstants.GAME_TICK_MILLISECONDS, TimeUnit.MILLISECONDS);
+
+        enterCageState();
     }
 
     public void performStopActions() {
+        if (world != null && (gameModel.getCurrentState() == GameModel.GameState.CAGE || gameModel.getCurrentState() == GameModel.GameState.ACTIVE)) {
+            world.execute(() -> {
+                HybridgeUtils.removeCageSync(world, getRedCageCenter());
+                HybridgeUtils.removeCageSync(world, getBlueCageCenter());
+            });
+        }
+        cancelTimer();
         gameModel.setGameState(GameModel.GameState.QUEUEING);
         for (Player player : gameModel.getPlayersInGameSet()) {
             //teleport players back to lobby or some safe location
@@ -120,8 +125,6 @@ public class BridgeGame {
             PlayerRef playerRef = player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
             EventTitleUtil.showEventTitleToPlayer(playerRef, HybridgeMessages.TITLE_GAME_ENDED, HybridgeMessages.SUBTITLE_GAME_ENDED, true, null, 3, 1, 1);
         }
-
-        cancelTimer();
 
         //TODO: This isn't removing the player from the BridgeService's playerGameMap, fix that
 
@@ -138,13 +141,18 @@ public class BridgeGame {
             f.cancel(false);
             gameTimerTask = null;
         }
+        ScheduledFuture<?> cageF = cageCountdownTask;
+        if (cageF != null) {
+            cageF.cancel(false);
+            cageCountdownTask = null;
+        }
         remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
     }
 
+    // Can move game state + winning out of the loop and swap over to event based triggers
     private void update() {
         //THIS IS SO SCUFFFFEEEEDDDDD
         world.execute(() -> {
-
 
             if (gameModel.getCurrentState() != GameModel.GameState.ACTIVE) {
                 return;
@@ -161,9 +169,12 @@ public class BridgeGame {
                         HybridgeUtils.setPlayerHealthFull(player);
                         HybridgeUtils.playSoundEffectToPlayer(player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType()), HybridgeConstants.SFX_DIE);
                     }
+                    // IDEA: are we within any goal areacase with ? two cases: if (isOwnGoal), else if (isNotOwnGoal), then tp all players + add point,
+                    // could add placeholder for case with more than two teams
                     //are we within the red goal area?
                     if (HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getRedGoalPos1WithOffset(zOffset), gameModel.map.getRedGoalPos2WithOffset(zOffset))) {
                         GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
+                        if (playerTeam == null) return;
                         switch (playerTeam) {
                             case RED:
                                 teleportPlayerToTeamSpawn(player);
@@ -172,7 +183,6 @@ public class BridgeGame {
                             case BLUE:
                                 Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered RED goal area. BLUE team scores!");
                                 gameModel.incrementTeamScore(GameModel.Team.BLUE);
-                                teleportAllInGamePlayersToTeamSpawn();
                                 HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.BLUE_TEAM_SCORED);
                                 HybridgeUtils.showTitleToCollectionOfPlayers(gameModel.getPlayerRefsInGameSet(),
                                         HybridgeMessages.TITLE_BLUE_SCORED,
@@ -181,13 +191,17 @@ public class BridgeGame {
                                         1,
                                         1);
                                 HybridgeUtils.playSoundEffectToPlayer(player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType()), HybridgeConstants.SFX_GOAL);
-                                healAllInGamePlayers();
+                                if (isGameWon() == null) {
+                                    gameModel.setGameState(GameModel.GameState.CAGE);
+                                    enterCageState();
+                                }
                                 break;
                         }
                     }
                     //are we within the blue goal area?
                     if (HybridgeUtils.isPositionWithinArea(pos, gameModel.map.getBlueGoalPos1WithOffset(zOffset), gameModel.map.getBlueGoalPos2WithOffset(zOffset))) {
                         GameModel.Team playerTeam = gameModel.getPlayerTeams().get(player);
+                        if (playerTeam == null) return;
                         switch (playerTeam) {
                             case BLUE:
                                 Hybridge.LOGGER.atInfo().log("Player " + player.getDisplayName() + " entered BLUE goal area but is on BLUE team. No score.");
@@ -196,7 +210,6 @@ public class BridgeGame {
                                 break;
                             case RED:
                                 gameModel.incrementTeamScore(GameModel.Team.RED);
-                                teleportAllInGamePlayersToTeamSpawn();
                                 HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), HybridgeMessages.RED_TEAM_SCORED);
                                 HybridgeUtils.showTitleToCollectionOfPlayers(gameModel.getPlayerRefsInGameSet(),
                                         HybridgeMessages.TITLE_RED_SCORED,
@@ -205,7 +218,10 @@ public class BridgeGame {
                                         1,
                                         1);
                                 HybridgeUtils.playSoundEffectToPlayer(player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType()), HybridgeConstants.SFX_GOAL);
-                                healAllInGamePlayers();
+                                if (isGameWon() == null) {
+                                    gameModel.setGameState(GameModel.GameState.CAGE);
+                                    enterCageState();
+                                }
                                 break;
                         }
                     }
@@ -273,6 +289,74 @@ public class BridgeGame {
         }
     }
 
+    // These will be updated later with more advanced cage models / schematic storing
+    // (also just ONE method, not red + blue)
+    private Vector3i getRedCageCenter() {
+        Vector3d spawn = gameModel.map.getRedTeamSpawnWithOffset(zOffset);
+        return new Vector3i((int) Math.floor(spawn.getX()), (int) Math.floor(spawn.getY()) + HybridgeConstants.CAGE_HEIGHT_ABOVE_SPAWN, (int) Math.floor(spawn.getZ()));
+    }
+
+    private Vector3i getBlueCageCenter() {
+        Vector3d spawn = gameModel.map.getBlueTeamSpawnWithOffset(zOffset);
+        return new Vector3i((int) Math.floor(spawn.getX()), (int) Math.floor(spawn.getY()) + HybridgeConstants.CAGE_HEIGHT_ABOVE_SPAWN, (int) Math.floor(spawn.getZ()));
+    }
+
+    /** Teleport position inside cage: floor of interior (center.y - 1) so players don't spawn on top of the cage. */
+    private static Vector3d cageCenterToTeleportPosition(Vector3i center) {
+        return new Vector3d(center.x + 0.5, center.y - 0.5, center.z + 0.5);
+    }
+
+    public void enterCageState() {
+        if (world == null) return;
+        world.execute(() -> {
+            Vector3i redCenter = getRedCageCenter();
+            Vector3i blueCenter = getBlueCageCenter();
+            HybridgeUtils.placeCageSync(world, redCenter);
+            HybridgeUtils.placeCageSync(world, blueCenter);
+
+            for (Player player : gameModel.getPlayersInGameSet()) {
+                GameModel.Team team = gameModel.getPlayerTeams().get(player);
+                if (team == null) continue;
+                Vector3d cagePos = team == GameModel.Team.RED ? cageCenterToTeleportPosition(redCenter) : cageCenterToTeleportPosition(blueCenter);
+                HybridgeUtils.teleportPlayer(player.getReference(), cagePos, team == GameModel.Team.RED ? gameModel.map.getRedTeamSpawnRotation() : gameModel.map.getBlueTeamSpawnRotation());
+                HybridgeUtils.providePlayerWithBridgeItems(player, team);
+                HybridgeUtils.setPlayerHealthFull(player);
+            }
+
+            cageCountdownRemaining.set(HybridgeConstants.CAGE_COUNTDOWN_SECONDS);
+            HybridgeUtils.sendMessageToCollectionOfPlayers(gameModel.getPlayersInGameSet(), Message.raw(String.valueOf(HybridgeConstants.CAGE_COUNTDOWN_SECONDS)).color(Color.YELLOW).bold(true));
+            HybridgeUtils.playSoundEffectToPlayersOnWorldThread(gameModel.getPlayerRefsInGameSet(), HybridgeConstants.SFX_CAGE_COUNTDOWN_TICK);
+
+            BridgeGame game = this;
+            final ScheduledFuture<?>[] countdownFutureBox = new ScheduledFuture<?>[1];
+            countdownFutureBox[0] = HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+                int n = game.cageCountdownRemaining.decrementAndGet();
+                ScheduledFuture<?> f = countdownFutureBox[0];
+                game.world.execute(() -> {
+                    if (n > 0) {
+                        HybridgeUtils.sendMessageToCollectionOfPlayers(game.gameModel.getPlayersInGameSet(), Message.raw(String.valueOf(n)).color(Color.YELLOW).bold(true));
+                        HybridgeUtils.playSoundEffectToPlayersOnWorldThread(game.gameModel.getPlayerRefsInGameSet(), HybridgeConstants.SFX_CAGE_COUNTDOWN_TICK);
+                    } else {
+                        HybridgeUtils.sendMessageToCollectionOfPlayers(game.gameModel.getPlayersInGameSet(), Message.raw("Go!").color(Color.GREEN).bold(true));
+                        f.cancel(false);
+                        game.cageCountdownTask = null;
+                        game.endCageState();
+                    }
+                });
+            }, 1, 1, TimeUnit.SECONDS);
+            cageCountdownTask = countdownFutureBox[0];
+        });
+    }
+
+    private void endCageState() {
+
+        gameModel.setGameState(GameModel.GameState.ACTIVE);
+        Vector3i redCenter = getRedCageCenter();
+        Vector3i blueCenter = getBlueCageCenter();
+        HybridgeUtils.removeCageSync(world, redCenter);
+        HybridgeUtils.removeCageSync(world, blueCenter);
+        cageCountdownTask = null;
+    }
 
     private void resetGameMap() {
         //we're going to copy the original map area, and paste it where this game instance is located

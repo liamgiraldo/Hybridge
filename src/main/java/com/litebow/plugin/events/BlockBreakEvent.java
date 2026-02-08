@@ -47,6 +47,7 @@ public class BlockBreakEvent extends EntityEventSystem<EntityStore, BreakBlockEv
         Hybridge.LOGGER.atInfo().log("BlockType: " + blockType.getId());
 
         BridgeGame game = bridgeService.getPlayerGame(playerRef);
+        // Weird? Currently logs this even if the block appears to not be cancelled
         if (game != null && !game.canBreakBlock(blockType, blockPosition, playerRef)) {
             breakBlockEvent.setCancelled(true);
             Hybridge.LOGGER.atInfo().log("Cancelled block break event for player " + playerRef.getUsername() + " in game.");
