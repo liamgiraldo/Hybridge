@@ -6,15 +6,20 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
+import com.hypixel.hytale.server.npc.util.InventoryHelper;
 import com.litebow.plugin.pages.ScorePage;
 
-import java.awt.Color;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class BridgeGame {
     public interface GameLifecycleListener {
@@ -32,6 +37,9 @@ public class BridgeGame {
     private final AtomicInteger cageCountdownRemaining = new AtomicInteger(0);
     private long remainingMs = HybridgeConstants.GAME_DURATION_MILLISECONDS;
 
+    private HashMap<PlayerRef, AtomicLong> playerArrowTimers = new HashMap<>();
+    private HashMap<PlayerRef, AtomicInteger> playerLastArrowCount = new HashMap<>();
+
     private final GameLifecycleListener lifecycleListener;
 
     private int zOffset = 0;
@@ -43,8 +51,14 @@ public class BridgeGame {
         this.world = world;
     }
 
+    private Player getPlayerFromRef(PlayerRef playerRef) {
+        return playerRef.getReference().getStore().getComponent(playerRef.getReference(), Player.getComponentType());
+    }
+
+
     public boolean canPlaceBlock(Vector3i blockPosition, PlayerRef playerRef) {
         //if the player isn't in the game, they CAN place blocks (probably in the lobby)
+        //TODO: Make sure people can't place the health potions
         if (!gameModel.getPlayerRefsInGameSet().contains(playerRef)) {
             return true;
         }
@@ -77,8 +91,13 @@ public class BridgeGame {
         return false;
     }
 
-    public boolean canDropItem() {
-        return false;
+    public boolean canDropItem(PlayerRef playerRef, String itemId) {
+        Player player = getPlayerFromRef(playerRef);
+        if (itemId.equals(HybridgeConstants.ARROW.getItemId())) {
+            //prevent dropping arrows
+            return false;
+        }
+        return true;
     }
 
     public void startGame() {
@@ -100,6 +119,11 @@ public class BridgeGame {
             remainingMs -= HybridgeConstants.GAME_TICK_MILLISECONDS;
             gameModel.setTimeRemaining(remainingMs);
         }, 0, HybridgeConstants.GAME_TICK_MILLISECONDS, TimeUnit.MILLISECONDS);
+
+        gameModel.getPlayerRefsInGameSet().stream().forEach(playerRef -> {
+            playerArrowTimers.put(playerRef, new AtomicLong(0));
+            playerLastArrowCount.put(playerRef, new AtomicInteger(0));
+        });
 
         enterCageState();
     }
@@ -133,6 +157,9 @@ public class BridgeGame {
         if (scoreboard != null)
             scoreboard.removeAll();
         scoreboard = null;
+
+        playerArrowTimers.clear();
+        playerLastArrowCount.clear();
     }
 
     private void cancelTimer() {
@@ -227,6 +254,8 @@ public class BridgeGame {
                     }
                 });
 
+                detectArrowUsage(getPlayerRefFromPlayer(player));
+                tickArrowTimers(getPlayerRefFromPlayer(player));
             }
 
             if (isGameWon() != null) {
@@ -247,6 +276,10 @@ public class BridgeGame {
         });
     }
 
+    private PlayerRef getPlayerRefFromPlayer(Player player) {
+        return player.getReference().getStore().getComponent(player.getReference(), PlayerRef.getComponentType());
+    }
+
     public void teleportPlayerToTeamSpawn(Player player) {
         GameModel.Team team = gameModel.getPlayerTeams().get(player);
         var entityRef = player.getReference();
@@ -258,7 +291,7 @@ public class BridgeGame {
         }
 
         //TODO: separate this logic later
-        HybridgeUtils.clearPlayerInventory(player);
+        HybridgeUtils.clearInventoryExceptItemIds(player, List.of(HybridgeConstants.ARROW.getItemId()), false, false);
         HybridgeUtils.providePlayerWithBridgeItems(player, team);
     }
 
@@ -301,7 +334,9 @@ public class BridgeGame {
         return new Vector3i((int) Math.floor(spawn.getX()), (int) Math.floor(spawn.getY()) + HybridgeConstants.CAGE_HEIGHT_ABOVE_SPAWN, (int) Math.floor(spawn.getZ()));
     }
 
-    /** Teleport position inside cage: floor of interior (center.y - 1) so players don't spawn on top of the cage. */
+    /**
+     * Teleport position inside cage: floor of interior (center.y - 1) so players don't spawn on top of the cage.
+     */
     private static Vector3d cageCenterToTeleportPosition(Vector3i center) {
         return new Vector3d(center.x + 0.5, center.y - 0.5, center.z + 0.5);
     }
@@ -370,6 +405,43 @@ public class BridgeGame {
 
     public int getzOffset() {
         return zOffset;
+    }
+
+    private void giveArrowToPlayer(PlayerRef playerRef) {
+        Player player = getPlayerFromRef(playerRef);
+        if (player == null) return;
+        ItemStack arrowStack = new ItemStack(HybridgeConstants.ARROW.getItemId(), 1);
+        player.getInventory().getStorage().addItemStack(arrowStack);
+        HybridgeUtils.playSoundEffectToPlayer(playerRef, HybridgeConstants.SFX_ARROW_GIVE);
+    }
+
+    private void tickArrowTimers(PlayerRef pr) {
+        AtomicLong timer = playerArrowTimers.get(pr);
+        long newVal = timer.addAndGet(-HybridgeConstants.GAME_TICK_MILLISECONDS);
+
+        if (newVal <= 0) {
+            Player player = getPlayerFromRef(pr);
+            if (player == null) return;
+
+            int currentArrows = InventoryHelper.countItems(player.getInventory().getCombinedEverything(), List.of(HybridgeConstants.ARROW.getItemId()));
+            if (currentArrows <= 0) {
+                giveArrowToPlayer(pr);
+                timer.set(HybridgeConstants.ARROW_TIMER_MILLISECONDS);
+            }
+        }
+    }
+
+    private void detectArrowUsage(PlayerRef playerRef) {
+        Player player = getPlayerFromRef(playerRef);
+        if (player == null) return;
+        // get the current arrow count for the player, compare it to the last known arrow count, and if it's less, that means they've used an arrow
+        // TODO: edge case where player drops an arrow and can dupe them
+        int currentArrowCount = InventoryHelper.countItems(player.getInventory().getCombinedEverything(), List.of(HybridgeConstants.ARROW.getItemId()));
+        AtomicInteger lastCount = playerLastArrowCount.computeIfAbsent(playerRef, pr -> new AtomicInteger(currentArrowCount));
+        int previousArrowCount = lastCount.getAndSet(currentArrowCount);
+        if (currentArrowCount < previousArrowCount) {
+            playerArrowTimers.put(playerRef, new AtomicLong(HybridgeConstants.ARROW_TIMER_MILLISECONDS));
+        }
     }
 
 

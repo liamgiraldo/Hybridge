@@ -33,13 +33,15 @@ public class DamageEvent extends EntityEventSystem<EntityStore, Damage> {
             BridgeGame game = bridgeService.getPlayerGame(playerRef);
             Hybridge.LOGGER.atInfo().log("Player " + playerRef.getUsername() + " took damage: " + damage.getAmount());
 //            damage.setCancelled(true);
+
+            //TODO: getCause is a deprecated method, find an alternative
             if (damage.getCause().equals(DamageCause.FALL)) {
                 Hybridge.LOGGER.atInfo().log("Cancelled fall damage for player " + playerRef.getUsername() + " in game.");
                 damage.setCancelled(true);
                 return;
             }
             //if the damager and the damagee are on the same team, cancel the damage
-            
+
             EntityStatMap playerStats = store.getComponent(playerRef.getReference(), EntityStatMap.getComponentType());
             var playerHealth = playerStats.get(DefaultEntityStatTypes.getHealth());
             if (playerHealth.get() - damage.getAmount() <= 0) {
