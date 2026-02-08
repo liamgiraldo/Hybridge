@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -23,18 +24,18 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class HybridgeUtils {
     private HybridgeUtils() {
 
     }
 
-    /** Relative positions for a hollow 5x5x5 cube (shell only). Each component in [-2, 2]; on shell if any component is ±2. */
+    /**
+     * Relative positions for a hollow 5x5x5 cube (shell only). Each component in [-2, 2]; on shell if any component is ±2.
+     */
     private static final List<Vector3i> CAGE_SHELL_RELATIVE = new ArrayList<>();
+
     static {
         for (int x = -2; x <= 2; x++) {
             for (int y = -2; y <= 2; y++) {
@@ -48,7 +49,10 @@ public class HybridgeUtils {
     }
 
     // Potentially could use built in hytale method here... Axiom?
-    /** Place a hollow 5x5x5 cage at the given block position (center of the cube). Call from world thread only. */
+
+    /**
+     * Place a hollow 5x5x5 cage at the given block position (center of the cube). Call from world thread only.
+     */
     public static void placeCageSync(World world, Vector3i center) {
         for (Vector3i rel : CAGE_SHELL_RELATIVE) {
             int x = center.x + rel.x;
@@ -58,7 +62,9 @@ public class HybridgeUtils {
         }
     }
 
-    /** Remove a hollow 5x5x5 cage at the given block position (same center as placeCage). Call from world thread only. */
+    /**
+     * Remove a hollow 5x5x5 cage at the given block position (same center as placeCage). Call from world thread only.
+     */
     public static void removeCageSync(World world, Vector3i center) {
         for (Vector3i rel : CAGE_SHELL_RELATIVE) {
             int x = center.x + rel.x;
@@ -353,6 +359,65 @@ public class HybridgeUtils {
             if (transformComponent != null) {
                 SoundUtil.playSoundEvent3dToPlayer(ref, index, SoundCategory.SFX, transformComponent.getPosition(), ref.getStore());
             }
+        }
+    }
+
+    /**
+     * Method written by AI
+     * Clears a player's inventory except for items with specified item IDs.
+     *
+     * @param player        The player whose inventory to clear.
+     *                      Note: This method should be called from the main server thread to ensure thread safety when modifying the player's inventory.
+     * @param keepItemIds   A collection of item IDs to keep in the inventory. All items with these IDs will not be removed.
+     * @param includeArmor  If true, the player's armor slots will also be cleared except for the specified item IDs. If false, armor slots will be left unchanged.
+     * @param bypassFilters If true, the method will attempt to bypass any "can't remove" filters on items when clearing. Use with caution, as this may have unintended consequences if certain items are not meant to be removed.
+     */
+    public static void clearInventoryExceptItemIds(
+            Player player,
+            Collection<String> keepItemIds,
+            boolean includeArmor,
+            boolean bypassFilters
+    ) {
+        Inventory inv = player.getInventory();
+        Set<String> keep = (keepItemIds instanceof Set<String>) ? (Set<String>) keepItemIds : new HashSet<>(keepItemIds);
+
+        clearContainerExcept(inv.getHotbar(), keep, bypassFilters);
+        clearContainerExcept(inv.getStorage(), keep, bypassFilters);
+        clearContainerExcept(inv.getUtility(), keep, bypassFilters);
+        clearContainerExcept(inv.getBackpack(), keep, bypassFilters);
+
+        if (includeArmor) {
+            clearContainerExcept(inv.getArmor(), keep, bypassFilters);
+        }
+
+        // Optional: If you ever notice client UI not updating immediately, uncomment:
+        // player.getPacketHandler().write(inv.toPacket());
+    }
+
+    /**
+     * Method written by AI
+     * Helper method to clear an ItemContainer except for items with specified item IDs.
+     *
+     * @param container     The ItemContainer to clear.
+     * @param keepItemIds   A set of item IDs to keep in the container. All items with these IDs will not be removed.
+     * @param bypassFilters If true, the method will attempt to bypass any "can't remove" filters on items when clearing. Use with caution, as this may have unintended consequences if certain items are not meant to be removed.
+     */
+    private static void clearContainerExcept(ItemContainer container, Set<String> keepItemIds, boolean bypassFilters) {
+        if (container == null) return;
+
+        for (short slot = 0; slot < container.getCapacity(); slot++) {
+            ItemStack stack = container.getItemStack(slot);
+            if (ItemStack.isEmpty(stack)) continue;
+
+            String itemId = stack.getItemId();
+            if (keepItemIds.contains(itemId)) continue;
+
+            // Strongest "clear this slot" option:
+            // If bypassFilters == true, pass filter=false to ignore cantRemove filters.
+            container.removeItemStackFromSlot(slot, !bypassFilters);
+
+            // Alternative (also works):
+            // container.setItemStackForSlot(slot, null, !bypassFilters);
         }
     }
 }

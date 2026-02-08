@@ -1,20 +1,13 @@
 package com.litebow.plugin;
 
-import com.hypixel.hytale.builtin.buildertools.commands.CopyCommand;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.modules.collision.WorldUtil;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.litebow.plugin.commands.BridgeCommand;
 import com.litebow.plugin.commands.CopyPasteCommand;
+import com.litebow.plugin.commands.PlayerItemCommand;
 import com.litebow.plugin.commands.RotationCommand;
-import com.litebow.plugin.events.BlockBreakEvent;
-import com.litebow.plugin.events.BlockPlaceEvent;
-import com.litebow.plugin.events.DamageEvent;
-import com.litebow.plugin.events.PlayerDisconnectEvent;
-import com.litebow.plugin.maps.PlaceholderMap;
+import com.litebow.plugin.events.*;
 
 import javax.annotation.Nonnull;
 
@@ -40,11 +33,12 @@ public class Hybridge extends JavaPlugin {
         this.getCommandRegistry().registerCommand(new RotationCommand());
         this.getCommandRegistry().registerCommand(new CopyPasteCommand());
         this.getCommandRegistry().registerCommand(new CopyPasteCommand.PasteCommand());
-
+        this.getCommandRegistry().registerCommand(new PlayerItemCommand());
 
         this.getEntityStoreRegistry().registerSystem(new BlockPlaceEvent(bridgeService));
         this.getEntityStoreRegistry().registerSystem(new DamageEvent(bridgeService));
         this.getEntityStoreRegistry().registerSystem(new BlockBreakEvent(bridgeService));
+        this.getEntityStoreRegistry().registerSystem(new PlayerDropItemEvent(bridgeService));
 
         this.getEventRegistry().registerGlobal(com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent.class, new PlayerDisconnectEvent(bridgeService)::onPlayerDisconnect);
 
